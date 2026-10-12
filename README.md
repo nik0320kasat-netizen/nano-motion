@@ -6,9 +6,11 @@ A demo store for Nano Motion, a fictional premium activewear brand launching on 
 - **Demo mode:** add `?demo=1` to any URL to open the pixel event log beside the store. In the panel, `–` minimizes it to a corner bar, `×` closes it (or use `?demo=0`)
 - **Pixel ID:** `1GtqyL7Rgr4qk4pR3LFbss`
 - **Stack:** plain HTML, CSS, JavaScript. No framework, no build step, no backend, so every line is readable.
-- **Source code:** this repository; the site footer links here ("Measurement plan and source code").
+- **Source code:** this repository; the site footer links here ("Measurement plan and source code"). Public access is required before submission so reviewers can open the link.
 
 ---
+
+**Specification baseline: October 12, 2026.** This README describes the current implementation and decisions, not a historical change log. The browser pixel is deliberately client-side; server-side Conversions API delivery and ingestion/reporting checks are separate production concerns. The demo has no server-side order authority.
 
 ## 1. What the business needs, and what we measure for it
 
@@ -71,7 +73,7 @@ oaiq('measure', 'order_created', {
     { id: 'NM-SK-02-WHT-M', name: 'Tempo Run Socks (White, M)', content_type: 'product', quantity: 1, amount: 1800 },
     { id: 'NM-TS-04-STN-M', name: 'Base Training Tee (Stone, M)', content_type: 'product', quantity: 1, amount: 5800 }
   ]
-}, { event_id: 'NM-804061' });
+}, { event_id: order.id }); // e.g., NM-MGN4X2Q1-7F3A9C21; created once per order
 ```
 
 ## 4. Idempotency: every conversion counts once
@@ -82,7 +84,7 @@ oaiq('measure', 'order_created', {
 | Fire-once guard | Refresh, back button, reopened tab | Sent IDs are recorded; a repeat is skipped and logged as "skipped: already sent" |
 | Platform dedupe | Pixel and Conversions API both send it | OpenAI matches on Pixel ID + event name + event ID and keeps the first event |
 
-The fire-once guard alone is not a guarantee (storage can be cleared, another device). The stable event ID is the real guarantee. Funnel events like `page_viewed` legitimately repeat and carry no ID.
+The fire-once guard alone is not a guarantee (storage can be cleared, another device). A stable business event ID enables platform-side deduplication when supported; it cannot, by itself, guarantee end-to-end exactly-once ingestion or attribution. Funnel events like `page_viewed` legitimately repeat and carry no ID.
 
 **IDs must be unique across all shoppers,** because OpenAI dedupes on Pixel ID + event + ID regardless of who sent it: two orders sharing an ID would count as one. In production the ID comes from the order or billing system. This demo has no backend, so it generates a collision-resistant ID in the browser from time plus random bytes, e.g. `NM-MGN4X2Q1-7F3A9C21`.
 
@@ -153,7 +155,7 @@ The pixel is the right day-one tool: one snippet, live in days. OpenAI's own doc
 
 ```json
 {
-  "id": "NM-804061",
+  "id": "NM-MGN4X2Q1-7F3A9C21",
   "type": "order_created",
   "timestamp_ms": 1791552000000,
   "oppref": "<captured from the landing URL; the API does not capture it automatically>",
@@ -205,7 +207,7 @@ assets/pages/*.js   Page logic, one file per page (keeps inline scripts out for 
 vercel.json         Security headers and Content Security Policy
 ```
 
-**`tracking.js` owns every pixel call:** consent gating, minor-unit amounts, `contents[]` with variant IDs, event IDs and the fire-once guard, normalization and hashing, and logging. One integration surface to audit, and the natural place to add the Conversions API hand-off later.
+**`tracking.js` owns browser pixel calls:** consent gating, minor-unit amounts, `contents[]` with variant IDs, event IDs and the fire-once guard, normalization and hashing, and demo logging. Its `sent` log status means **dispatched to the SDK**, not confirmed processed or attributed. Keep server-side conversion delivery, authenticated ingestion diagnostics, and attribution reporting outside this browser file. No server-side validation or attribution polling is required for this reference implementation.
 
 **Head snippet, identical on every page, top of `<head>`:** decide consent → load the SDK → `oaiq('consent', false)` if needed → `oaiq('init', ...)` with stored hashes. Preconnect to `bzrcdn.openai.com`. If Nano Motion's real site has a Content Security Policy, add `https://bzrcdn.openai.com` to `script-src` and `connect-src`, and `https://bzr.openai.com` to `connect-src` and `img-src`.
 
@@ -231,7 +233,7 @@ The site was tested end to end in headless Chromium with every `oaiq` call recor
 - No JavaScript errors on any page; no horizontal scroll on a 390px phone
 - Accessibility scan (axe-core): no violations on any page
 
-**What we could not verify here:** that OpenAI received and processed the events. That needs Ads Manager access for this Pixel ID (Events Manager, or the recent-events monitoring endpoint). On a live engagement this is the first thing to confirm with the customer.
+**Verification boundaries (October 12):** Live DevTools checks observed HTTP `202 Accepted` for all 12 event types. This confirms an HTTP acknowledgment from the receiving endpoint; it does **not** establish downstream processing, attribution, or reporting. The 62 automated checks cover implementation behavior, not downstream attribution. Receipt diagnostics (e.g., recent-events monitoring, if available) and attributed reporting belong in separate QA/reporting workflows, not in `assets/tracking.js`.
 
 **Run it locally:** `python3 -m http.server 8000` in this folder, then open `http://localhost:8000/?demo=1`. Use a local server, not a double-clicked file: browser hashing needs a secure context, and localhost counts.
 
