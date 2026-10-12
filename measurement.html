@@ -1,0 +1,551 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How this site is measured | Nano Motion</title>
+<link rel="preconnect" href="https://bzrcdn.openai.com">
+<!-- OpenAI Measurement Pixel: same block, top of <head>, on every page.
+     Order matters: 1) decide consent  2) load SDK  3) set consent BEFORE init  4) init. -->
+<script>
+  (function () {
+    var m = { country: 'US' }, c = null;
+    try { m = JSON.parse(localStorage.getItem('nm_market') || '{"country":"US"}'); c = localStorage.getItem('nm_consent'); } catch (e) {}
+    var optIn = ['GB', 'DE'].indexOf(m.country) !== -1;   // opt-in markets
+    var gpc = navigator.globalPrivacyControl === true;             // browser opt-out signal (CCPA and other US states)
+    window.__nmDenied = c === 'denied' || ((optIn || gpc) && c !== 'granted');
+  })();
+  (function (w, d, s, u) {
+    if (w.oaiq) return;
+    var q = function () { q.q.push(arguments); };
+    q.q = []; w.oaiq = q;
+    var js = d.createElement(s); js.async = true; js.src = u;
+    var f = d.getElementsByTagName(s)[0]; f.parentNode.insertBefore(js, f);
+  })(window, document, "script", "https://bzrcdn.openai.com/sdk/oaiq.min.js");
+  if (window.__nmDenied) oaiq("consent", false);
+  var __nmUser = {};
+  try { __nmUser = JSON.parse(localStorage.getItem('nm_user') || '{}'); } catch (e) {}
+  oaiq("init", {
+    pixelId: "1GtqyL7Rgr4qk4pR3LFbss",
+    debug: true,          // on for this demo so reviewers can see SDK activity; off in production
+    user: __nmUser        // hashed identifiers only (SHA-256), plus raw country/city/postal code
+  });
+</script>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body data-page="measurement">
+<!-- Generated from README.md by tools/render-measurement.py. Edit the README, then re-run. -->
+<main class="prose doc">
+<h1>Nano Motion: OpenAI Pixel reference implementation</h1>
+<p>A demo store for Nano Motion, a fictional premium activewear brand launching on ChatGPT Ads. The site exists to show one thing well: <strong>the OpenAI Measurement Pixel deployed deliberately</strong>, with a ranked signal plan, correct payloads, idempotent conversions, consent by market, and a clear line where the pixel stops and the Conversions API takes over.</p>
+<ul>
+<li><strong>Live site:</strong> https://nano-motion-three.vercel.app/</li>
+<li><strong>Demo mode:</strong> add <code>?demo=1</code> to any URL to open the pixel event log beside the store. In the panel, <code>–</code> minimizes it to a corner bar, <code>×</code> closes it (or use <code>?demo=0</code>)</li>
+<li><strong>Pixel ID:</strong> <code>1GtqyL7Rgr4qk4pR3LFbss</code></li>
+<li><strong>Stack:</strong> plain HTML, CSS, JavaScript. No framework, no build step, no backend, so every line is readable.</li>
+<li><strong>This page on the site:</strong> <code>measurement.html</code> is rendered from this README, so reviewers can read the plan without repo access.</li>
+</ul>
+<hr />
+<h2>1. What the business needs, and what we measure for it</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Stakeholder need</th>
+<th>Measurement answer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CMO: spend tied to valuable onsite actions from day one</td>
+<td><code>order_created</code> with value, currency and items, live at launch</td>
+</tr>
+<tr>
+<td>CMO: membership program</td>
+<td><code>trial_started</code> and <code>subscription_created</code>, tracked separately from account signup</td>
+</tr>
+<tr>
+<td>CTO: straightforward, scalable, credible</td>
+<td>One snippet, one tracking file, standard events first, dedupe-ready event IDs, consent built in</td>
+</tr>
+<tr>
+<td>Both: international expansion</td>
+<td>Per-market prices in minor units, currency on every value event, consent gating in opt-in markets, a demand signal for markets not yet launched</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>The test for every event:</strong> does sending it to an ad platform improve optimization, attribution, or reporting on ad value? If not, it belongs in Nano Motion's own analytics, not the ads pixel.</p>
+<h2>2. Event plan: 12 events, 3 tiers</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>Event</th>
+<th>Fires when</th>
+<th>Data shape</th>
+<th>event_id</th>
+<th>Optimizable</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1 Pay for</td>
+<td><code>order_created</code></td>
+<td>Confirmation page, once per order</td>
+<td>contents</td>
+<td>Order ID</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>1</td>
+<td><code>subscription_created</code></td>
+<td>Paid Club plan confirmed</td>
+<td>plan_enrollment</td>
+<td>Subscription ID</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>1</td>
+<td><code>trial_started</code></td>
+<td>Free Club trial confirmed</td>
+<td>plan_enrollment</td>
+<td>Trial ID</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>2 Volume and diagnosis</td>
+<td><code>checkout_started</code></td>
+<td>Checkout loads with items</td>
+<td>contents</td>
+<td>none</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>items_added</code></td>
+<td>Add to bag, or add the whole kit</td>
+<td>contents</td>
+<td>none</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>contents_viewed</code></td>
+<td>Product page loads</td>
+<td>contents</td>
+<td>none</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>registration_completed</code></td>
+<td>Account created</td>
+<td>customer_action</td>
+<td>Account ID</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>page_viewed</code></td>
+<td>Every page load</td>
+<td>contents</td>
+<td>none</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>3 Insight (custom)</td>
+<td><code>fit_finder_started</code></td>
+<td>First Fit Finder answer</td>
+<td>custom</td>
+<td>none</td>
+<td>No</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>fit_finder_completed</code></td>
+<td>Fit Finder result shown</td>
+<td>custom</td>
+<td>none</td>
+<td>No</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>back_in_stock_signup</code></td>
+<td>Email submitted on a sold-out size</td>
+<td>custom</td>
+<td>none</td>
+<td>No</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>market_selected</code></td>
+<td>Market or currency switched</td>
+<td>custom</td>
+<td>none</td>
+<td>No</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Why these tiers</strong>
+- <strong>Tier 1</strong> is what Nano Motion pays for: revenue and members.
+- <strong>Tier 2</strong> gives the optimizer enough volume early and shows where the funnel leaks. A new advertiser has few purchases on day one, so we recommend launching conversion-optimized campaigns on <code>checkout_started</code>, with purchases attached for reporting, then launching a purchase-optimized campaign once volume supports it. The optimization event is locked per campaign, so the switch is a new campaign, planned upfront.
+- <strong>Tier 3</strong> is category-specific insight. Custom events cannot be optimization goals, so they are reporting only.</p>
+<p><strong>Deliberately not sent to the ad platform</strong></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Signal</th>
+<th>Why not</th>
+<th>Where it belongs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Newsletter signup as <code>lead_created</code></td>
+<td>It is optimizable; a campaign could end up optimizing toward signups instead of sales</td>
+<td>Analytics, email platform</td>
+</tr>
+<tr>
+<td>Wishlist, referrals, reviews, pro-program applications</td>
+<td>Real signals, but not ad optimization or attribution inputs</td>
+<td>Analytics</td>
+</tr>
+<tr>
+<td>Gift card purchase vs. redemption</td>
+<td>Order value already captures revenue</td>
+<td>Order system, analytics</td>
+</tr>
+<tr>
+<td>Scroll depth, time on page, clicks</td>
+<td>Engagement noise</td>
+<td>Analytics</td>
+</tr>
+<tr>
+<td>A separate bundle event</td>
+<td>Kits go through <code>items_added</code> with several items in <code>contents[]</code></td>
+<td>n/a</td>
+</tr>
+</tbody>
+</table></div>
+<h2>3. Payload rules applied</h2>
+<ul>
+<li><strong>Amounts are integers in the currency's ISO 4217 minor unit.</strong> USD 98.00 is sent as <code>9800</code>. <strong>JPY has no minor unit</strong>, so ¥14,800 is sent as <code>14800</code>, not <code>1480000</code>. Prices are stored per market already in minor units, so there is no runtime conversion or rounding.</li>
+<li><strong>Currency is sent with every amount.</strong></li>
+<li><strong>Item IDs are variant-level once a size is chosen:</strong> style + color + size, e.g. <code>NM-RJ-01-BLK-M</code>. Product views use the style ID, <code>NM-RJ-01</code>. Item names carry color and size in words.</li>
+<li><strong><code>contents[]</code> uses only the fields the pixel accepts:</strong> id, name, content_type, quantity, amount. Size and color as structured fields (<code>variant_dict</code>) and <code>group_id</code> are Conversions API only, so size lives in the ID for now.</li>
+<li><strong>Order value is the merchandise subtotal</strong>, excluding tax and shipping.</li>
+</ul>
+<p>Example, sent on the confirmation page:</p>
+<pre tabindex="0"><code class="language-js">oaiq('measure', 'order_created', {
+  type: 'contents', amount: 27200, currency: 'USD',
+  contents: [
+    { id: 'NM-RJ-01-BLK-M', name: 'Stride Running Jacket (Black, M)', content_type: 'product', quantity: 2, amount: 9800 },
+    { id: 'NM-SK-02-WHT-M', name: 'Tempo Run Socks (White, M)', content_type: 'product', quantity: 1, amount: 1800 },
+    { id: 'NM-TS-04-STN-M', name: 'Base Training Tee (Stone, M)', content_type: 'product', quantity: 1, amount: 5800 }
+  ]
+}, { event_id: 'NM-804061' });
+</code></pre>
+<h2>4. Idempotency: every conversion counts once</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Solves</th>
+<th>How</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Business ID as <code>event_id</code></td>
+<td>The same conversion arriving from any source</td>
+<td>The order, subscription, trial or account ID is created once with the record and reused as <code>event_id</code>. Not a random browser UUID: the server already knows the order ID, so the Conversions API can send the same one.</td>
+</tr>
+<tr>
+<td>Fire-once guard</td>
+<td>Refresh, back button, reopened tab</td>
+<td>Sent IDs are recorded; a repeat is skipped and logged as "skipped: already sent"</td>
+</tr>
+<tr>
+<td>Platform dedupe</td>
+<td>Pixel and Conversions API both send it</td>
+<td>OpenAI matches on Pixel ID + event name + event ID and keeps the first event</td>
+</tr>
+</tbody>
+</table></div>
+<p>The fire-once guard alone is not a guarantee (storage can be cleared, another device). The stable event ID is the real guarantee. Funnel events like <code>page_viewed</code> legitimately repeat and carry no ID.</p>
+<p><strong>IDs must be unique across all shoppers,</strong> because OpenAI dedupes on Pixel ID + event + ID regardless of who sent it: two orders sharing an ID would count as one. In production the ID comes from the order or billing system. This demo has no backend, so it generates a collision-resistant ID in the browser from time plus random bytes, e.g. <code>NM-MGN4X2Q1-7F3A9C21</code>.</p>
+<h2>5. Matching data</h2>
+<p>Hashed identifiers go in <code>oaiq('init', { user })</code>, not in events. The site re-runs <code>init</code> when a visitor identifies: account signup, checkout (guests included), Club signup, back-in-stock signup. Later pages pass the stored hashes in the head snippet.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Normalization before SHA-256</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Email</td>
+<td>Trim, lowercase</td>
+<td><code>Jane.Doe@Mail.com</code> → <code>jane.doe@mail.com</code></td>
+</tr>
+<tr>
+<td>Phone</td>
+<td>Keep country code; strip spaces, brackets, dots, hyphens, leading <code>+</code> and zeros. National numbers get the market's calling code</td>
+<td><code>+1 (415) 555-2671</code> → <code>14155552671</code>; US <code>415 555 2671</code> → <code>14155552671</code>; UK <code>07911 123456</code> → <code>447911123456</code></td>
+</tr>
+<tr>
+<td>First / last name</td>
+<td>Lowercase; remove whitespace and ASCII punctuation; keep accents</td>
+<td><code>O'Connor</code> → <code>oconnor</code>, <code>José</code> → <code>josé</code></td>
+</tr>
+<tr>
+<td>Country, city, postal code</td>
+<td>Sent raw</td>
+<td><code>US</code>, <code>San Francisco</code>, <code>94107</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>Hashing runs in the browser with <code>crypto.subtle</code>. Raw email, phone and names are never sent or stored; only hashes are kept, and only with consent: without consent, identifiers are not hashed, stored or sent, and declining deletes stored hashes. If hashing is unavailable, identifiers are skipped and the purchase still completes.</p>
+<p>Phone hashes only match when the country code is present, and shoppers usually type national numbers, so the site adds the market's calling code (US 1, UK 44, Germany 49, Japan 81) unless the number already starts with <code>+</code> or <code>00</code>. The phone hash produced by the site matches the example in OpenAI's documentation. We implement matching explicitly, rather than relying on automatic advanced matching, so the demo shows exactly what leaves the browser.</p>
+<h2>6. Consent and international</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Market</th>
+<th>Currency</th>
+<th>Minor unit</th>
+<th>Jacket</th>
+<th>Sent as</th>
+<th>Consent</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>United States</td>
+<td>USD</td>
+<td>2</td>
+<td>$98.00</td>
+<td><code>9800</code></td>
+<td>On by default; footer opt-out</td>
+</tr>
+<tr>
+<td>United Kingdom</td>
+<td>GBP</td>
+<td>2</td>
+<td>£78.00</td>
+<td><code>7800</code></td>
+<td>Opt-in banner</td>
+</tr>
+<tr>
+<td>Germany</td>
+<td>EUR</td>
+<td>2</td>
+<td>€89.00</td>
+<td><code>8900</code></td>
+<td>Opt-in banner</td>
+</tr>
+<tr>
+<td>Japan</td>
+<td>JPY</td>
+<td>0</td>
+<td>¥14,800</td>
+<td><code>14800</code></td>
+<td>On by default</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li>In opt-in markets the head snippet calls <code>oaiq('consent', false)</code> <strong>before</strong> <code>init</code>. Nothing is sent until the visitor accepts. Events from before consent are not replayed, by design. Declining also removes the pixel's cookies.</li>
+<li>In production, Nano Motion's consent platform (OneTrust, Osano or similar) makes these same calls; the banner here stands in for it. Legal rules per country are set with their privacy counsel.</li>
+<li><strong>Global Privacy Control is honored in every market.</strong> If the browser sends GPC (<code>navigator.globalPrivacyControl</code>), the head snippet treats it like an opt-in market: <code>consent false</code> before <code>init</code>, nothing sent unless the visitor explicitly opts in on this site. CCPA and several other US states require honoring GPC.</li>
+<li>One Pixel ID covers all markets. Multiple Pixel IDs are meant for multiple advertisers or partners on one site, not one per country.</li>
+<li><code>market_selected</code> records demand from markets before Nano Motion launches there.</li>
+<li>A privacy notice page lists the pixel, its first-party cookies (<code>__oppref</code>, <code>__obref</code>) and exactly what is sent.</li>
+</ul>
+<h2>7. Security</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Control</th>
+<th>What the site does</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Content Security Policy</td>
+<td>Enforced via <code>vercel.json</code>: scripts only from this site, <code>bzrcdn.openai.com</code> and one hashed inline script (the pixel snippet); connections only to this site and OpenAI's pixel domains; no plugins, no framing, forms post only to this site</td>
+<td>Exactly the sources OpenAI's docs list; nothing else can run or send data</td>
+</tr>
+<tr>
+<td>No <code>unsafe-inline</code> for scripts</td>
+<td>Page logic lives in <code>assets/pages/*.js</code>; the only inline script is the pixel snippet, allowed by its SHA-256 hash</td>
+<td>OpenAI's docs advise against adding <code>unsafe-inline</code> for the pixel. A nonce needs a server per response; a hash suits a static site</td>
+</tr>
+<tr>
+<td>Other headers</td>
+<td><code>X-Content-Type-Options: nosniff</code>, <code>Referrer-Policy: strict-origin-when-cross-origin</code>, <code>Permissions-Policy</code> (camera, microphone, geolocation, payment off), <code>Strict-Transport-Security</code>, <code>frame-ancestors 'none'</code></td>
+<td>Standard hardening a CTO's security team will check first</td>
+</tr>
+<tr>
+<td>Cookies</td>
+<td>Both pixel cookies are first-party (<code>__oppref</code>, <code>__obref</code>), set on this site's domain</td>
+<td>Third-party cookie blocking does not affect the pixel</td>
+</tr>
+<tr>
+<td>Keys</td>
+<td>No API key in the browser. The pixel needs only its public Pixel ID</td>
+<td>The Conversions API key lives only on the server</td>
+</tr>
+<tr>
+<td>Personal data</td>
+<td>Only SHA-256 hashes leave the browser, only with consent</td>
+<td>Data minimization</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Why no Subresource Integrity (SRI) on <code>oaiq.min.js</code>:</strong> the SDK is evergreen (OpenAI updates it in place), so a pinned hash would break the pixel on the next release. The control is the CSP allowlist plus vendor review; the trade-off is worth stating plainly.</p>
+<p><strong>When the CSP changes:</strong> if the pixel snippet's text changes, its hash in <code>vercel.json</code> must be recomputed, or the browser blocks it.</p>
+<h2>8. What the pixel cannot do, and the alternative</h2>
+<p>The pixel is the right day-one tool: one snippet, live in days. OpenAI's own documentation calls the Conversions API more reliable than the pixel alone.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>The pixel cannot</th>
+<th>Why</th>
+<th>Alternative</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Recover events lost to ad blockers and browser limits</td>
+<td>It runs in the browser</td>
+<td>Conversions API, same event ID for dedupe</td>
+</tr>
+<tr>
+<td>Confirm the order actually succeeded</td>
+<td>It fires on page load</td>
+<td>Server sends confirmed orders</td>
+</tr>
+<tr>
+<td>Track trial-to-paid, renewals, cancellations</td>
+<td>No shopper is on the site when they happen</td>
+<td>Server events</td>
+</tr>
+<tr>
+<td>Send size, color and product group as structured fields</td>
+<td><code>variant_dict</code> and <code>group_id</code> are API only</td>
+<td>Conversions API</td>
+</tr>
+<tr>
+<td>Account for returns</td>
+<td>There is no return or refund event in the taxonomy</td>
+<td>Interim custom server event or offline adjustment; raise as product feedback</td>
+</tr>
+<tr>
+<td>Measure offline or in-store sales</td>
+<td>No browser</td>
+<td>API with <code>action_source</code> offline or physical_store</td>
+</tr>
+<tr>
+<td>Track app installs and opens</td>
+<td>Not supported by the pixel</td>
+<td>API with <code>action_source</code> mobile_app, or a measurement partner</td>
+</tr>
+<tr>
+<td>Send events after the fact</td>
+<td>Fires in the moment only</td>
+<td>API accepts events up to 7 days old</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Platform note:</strong> on Shopify, store scripts do not run on the checkout pages, so purchase tracking there goes through Shopify's customer events or server-side. A major Shopify tracking vendor already ships built-in OpenAI pixel support, which makes it a configuration change rather than an engineering project for Shopify brands.</p>
+<p><strong>Hybrid setup (illustrative sample, not executed; the API key lives only on Nano Motion's server):</strong></p>
+<pre tabindex="0"><code class="language-json">{
+  &quot;id&quot;: &quot;NM-804061&quot;,
+  &quot;type&quot;: &quot;order_created&quot;,
+  &quot;timestamp_ms&quot;: 1791552000000,
+  &quot;oppref&quot;: &quot;&lt;captured from the landing URL; the API does not capture it automatically&gt;&quot;,
+  &quot;source_url&quot;: &quot;https://&lt;site&gt;/confirmation.html&quot;,
+  &quot;action_source&quot;: &quot;web&quot;,
+  &quot;user&quot;: { &quot;obref&quot;: &quot;&lt;from the __obref cookie, unhashed&gt;&quot;, &quot;emails_sha256&quot;: [&quot;&lt;hash&gt;&quot;] },
+  &quot;data&quot;: {
+    &quot;type&quot;: &quot;contents&quot;, &quot;amount&quot;: 27200, &quot;currency&quot;: &quot;USD&quot;,
+    &quot;contents&quot;: [
+      { &quot;id&quot;: &quot;NM-RJ-01&quot;, &quot;quantity&quot;: 2, &quot;amount&quot;: 9800, &quot;variant_dict&quot;: { &quot;size&quot;: &quot;M&quot;, &quot;color&quot;: &quot;black&quot; } },
+      { &quot;id&quot;: &quot;NM-SK-02&quot;, &quot;quantity&quot;: 1, &quot;amount&quot;: 1800 },
+      { &quot;id&quot;: &quot;NM-TS-04&quot;, &quot;quantity&quot;: 1, &quot;amount&quot;: 5800 }
+    ]
+  }
+}
+</code></pre>
+<p>No engineering capacity? OpenAI's Hightouch, Tealium and LiveRamp integrations can send server events from existing systems.</p>
+<h2>9. Launch checklist (beyond this site)</h2>
+<ul>
+<li>Complete business verification before launch, so serving is not throttled.</li>
+<li>Tag every ad URL with UTM parameters (<code>utm_source=chatgpt&amp;utm_medium=paid&amp;utm_campaign=...</code>) so Nano Motion's own analytics credits ChatGPT instead of reporting it as direct traffic.</li>
+<li>Validate every event, not just purchases, in debug mode and the Network tab on day one. A linked conversion event is not proof that it fires.</li>
+<li>Turn <code>debug</code> off in production; it logs to the console for every visitor. It is on here so reviewers can see SDK activity.</li>
+<li>After 4 to 6 weeks of spend, run a geo-based incrementality test. People research in a conversation and buy later, so click attribution likely under-counts ChatGPT; a lift test gives a causal number finance trusts.</li>
+</ul>
+<h2>10. How it is built</h2>
+<pre tabindex="0"><code>index.html          Home: hero, new arrivals, &quot;tested by&quot; athletes
+shop.html           All products with category filters
+product.html        PDP trust stack: rating, fit meter, model size, size guide,
+                    sold-out size with back-in-stock, review summary, complete the kit
+fit-finder.html     3 questions: how you train, fit preference, usual size
+cart.html           Bag with free-shipping progress
+checkout.html       Guest checkout, hashed matching, order creation
+confirmation.html   order_created, once
+membership.html     Nano Motion Club: free trial or paid monthly
+account.html        Account signup (separate from the Club on purpose)
+privacy.html        Privacy notice: what is sent, cookies, choices
+assets/products.js  Catalog and markets; prices in minor units per market
+assets/store.js     Cart, market, consent state, orders (localStorage)
+assets/tracking.js  The only file that calls oaiq
+assets/consent.js   Banner and consent calls
+assets/eventlog.js  Demo event log (?demo=1)
+assets/layout.js    Header, footer, market selector, page_viewed
+assets/pages/*.js   Page logic, one file per page (keeps inline scripts out for the CSP)
+measurement.html    This README rendered for reviewers (tools/render-measurement.py)
+vercel.json         Security headers and Content Security Policy
+</code></pre>
+<p><strong><code>tracking.js</code> owns every pixel call:</strong> consent gating, minor-unit amounts, <code>contents[]</code> with variant IDs, event IDs and the fire-once guard, normalization and hashing, and logging. One integration surface to audit, and the natural place to add the Conversions API hand-off later.</p>
+<p><strong>Head snippet, identical on every page, top of <code>&lt;head&gt;</code>:</strong> decide consent → load the SDK → <code>oaiq('consent', false)</code> if needed → <code>oaiq('init', ...)</code> with stored hashes. Preconnect to <code>bzrcdn.openai.com</code>. If Nano Motion's real site has a Content Security Policy, add <code>https://bzrcdn.openai.com</code> to <code>script-src</code> and <code>connect-src</code>, and <code>https://bzr.openai.com</code> to <code>connect-src</code> and <code>img-src</code>.</p>
+<h2>11. Verification</h2>
+<p>The site was tested end to end in headless Chromium with every <code>oaiq</code> call recorded, served with the production security headers. 63 checks pass, including:</p>
+<ul>
+<li>Pixel ID on every page; <code>page_viewed</code> once per load in the documented shape</li>
+<li><code>items_added</code> 9800 USD with variant ID; kit add sends one event with 3 items</li>
+<li><code>checkout_started</code> and <code>order_created</code> totals equal the sum of their lines</li>
+<li><code>order_created</code> carries the order ID as <code>event_id</code>; a refresh does not resend it</li>
+<li>Email, phone and name hashes match independently computed SHA-256 values; the phone hash matches OpenAI's documented example</li>
+<li>No raw email, phone or name in any call or in storage</li>
+<li>Germany: <code>consent false</code> set before <code>init</code>, banner shown, nothing sent until accept, then <code>items_added</code> 8900 EUR</li>
+<li>UK decline: nothing sent after navigation</li>
+<li>Global Privacy Control (US): <code>consent false</code> before <code>init</code>, nothing sent, opt-out shown in the footer and the demo log</li>
+<li>Japan: ¥14,800 sent as <code>14800</code></li>
+<li>Phone numbers typed in national format get the right country code (US, UK, Germany, Japan)</li>
+<li>2,000 generated order IDs, all unique</li>
+<li>A kit never adds a sold-out size; the Fit Finder never recommends one</li>
+<li>Without consent, identifiers are not hashed, stored or sent; declining deletes stored hashes</li>
+<li>Zero Content Security Policy violations on all 11 pages</li>
+<li>No JavaScript errors on any page; no horizontal scroll on a 390px phone</li>
+<li>Accessibility scan (axe-core): no violations on any page</li>
+</ul>
+<p><strong>What we could not verify here:</strong> that OpenAI received and processed the events. That needs Ads Manager access for this Pixel ID (Events Manager, or the recent-events monitoring endpoint). On a live engagement this is the first thing to confirm with the customer.</p>
+<p><strong>Run it locally:</strong> <code>python3 -m http.server 8000</code> in this folder, then open <code>http://localhost:8000/?demo=1</code>. Use a local server, not a double-clicked file: browser hashing needs a secure context, and localhost counts.</p>
+<p><strong>Sources:</strong> OpenAI developer docs: <a href="https://developers.openai.com/ads/measurement-pixel">Measurement Pixel</a>, <a href="https://developers.openai.com/ads/supported-events">Supported Events</a>, <a href="https://developers.openai.com/ads/conversion-tracking">Conversion Tracking</a>, <a href="https://developers.openai.com/ads/conversions-api">Conversions API</a>, <a href="https://developers.openai.com/ads/multiple-pixels">Multiple Pixel IDs</a>.</p>
+</main>
+
+<script src="assets/products.js"></script>
+<script src="assets/store.js"></script>
+<script src="assets/eventlog.js"></script>
+<script src="assets/tracking.js"></script>
+<script src="assets/consent.js"></script>
+<script src="assets/layout.js"></script>
+</body>
+</html>

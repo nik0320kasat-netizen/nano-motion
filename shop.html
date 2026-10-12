@@ -31,6 +31,8 @@
     user: __nmUser        // hashed identifiers only (SHA-256), plus raw country/city/postal code
   });
 </script>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<meta name="robots" content="noindex">
 <link rel="stylesheet" href="assets/styles.css">
 </head>
 <body data-page="shop">
@@ -49,24 +51,6 @@
 <script src="assets/tracking.js"></script>
 <script src="assets/consent.js"></script>
 <script src="assets/layout.js"></script>
-<script>
-  window.NMPage = function () {
-    var cats = ['All', 'Running', 'Training', 'Yoga', 'Outerwear', 'Accessories'];
-    var active = 'All';
-    var chips = document.getElementById('chips');
-    function render() {
-      var list = window.NM_PRODUCTS.filter(function (p) { return active === 'All' || p.category === active; });
-      document.getElementById('shop-grid').innerHTML = list.map(NM.tile).join('');
-      document.getElementById('shop-count').textContent = list.length + ' products';
-      chips.innerHTML = cats.map(function (c) {
-        return '<button class="chip" type="button" aria-pressed="' + (c === active) + '" data-c="' + c + '">' + c + '</button>';
-      }).join('');
-      chips.querySelectorAll('.chip').forEach(function (b) {
-        b.onclick = function () { active = b.getAttribute('data-c'); render(); };
-      });
-    }
-    render();
-  };
-</script>
+<script src="assets/pages/shop.js"></script>
 </body>
 </html>

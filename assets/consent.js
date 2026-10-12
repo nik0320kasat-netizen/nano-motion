@@ -19,6 +19,8 @@
   }
   function deny() {
     NM.setConsent('denied');
+    // The SDK removes its own cookies on consent false; we also drop our stored identifier hashes
+    try { localStorage.removeItem('nm_user'); } catch (e) {}
     if (typeof window.oaiq === 'function') window.oaiq('consent', false);
     if (window.NMLog) window.NMLog.add({ event: 'consent', status: 'held', note: 'denied: nothing sends, pixel cookies removed', data: { consent: false } });
     close();

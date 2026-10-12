@@ -6,6 +6,7 @@ A demo store for Nano Motion, a fictional premium activewear brand launching on 
 - **Demo mode:** add `?demo=1` to any URL to open the pixel event log beside the store. In the panel, `–` minimizes it to a corner bar, `×` closes it (or use `?demo=0`)
 - **Pixel ID:** `1GtqyL7Rgr4qk4pR3LFbss`
 - **Stack:** plain HTML, CSS, JavaScript. No framework, no build step, no backend, so every line is readable.
+- **This page on the site:** `measurement.html` is rendered from this README, so reviewers can read the plan without repo access.
 
 ---
 
@@ -83,6 +84,8 @@ oaiq('measure', 'order_created', {
 
 The fire-once guard alone is not a guarantee (storage can be cleared, another device). The stable event ID is the real guarantee. Funnel events like `page_viewed` legitimately repeat and carry no ID.
 
+**IDs must be unique across all shoppers,** because OpenAI dedupes on Pixel ID + event + ID regardless of who sent it: two orders sharing an ID would count as one. In production the ID comes from the order or billing system. This demo has no backend, so it generates a collision-resistant ID in the browser from time plus random bytes, e.g. `NM-MGN4X2Q1-7F3A9C21`.
+
 ## 5. Matching data
 
 Hashed identifiers go in `oaiq('init', { user })`, not in events. The site re-runs `init` when a visitor identifies: account signup, checkout (guests included), Club signup, back-in-stock signup. Later pages pass the stored hashes in the head snippet.
@@ -90,11 +93,13 @@ Hashed identifiers go in `oaiq('init', { user })`, not in events. The site re-ru
 | Field | Normalization before SHA-256 | Example |
 | --- | --- | --- |
 | Email | Trim, lowercase | ` Jane.Doe@Mail.com ` → `jane.doe@mail.com` |
-| Phone | Keep country code; strip spaces, brackets, dots, hyphens, leading `+` and zeros | `+1 (415) 555-2671` → `14155552671` |
+| Phone | Keep country code; strip spaces, brackets, dots, hyphens, leading `+` and zeros. National numbers get the market's calling code | `+1 (415) 555-2671` → `14155552671`; US `415 555 2671` → `14155552671`; UK `07911 123456` → `447911123456` |
 | First / last name | Lowercase; remove whitespace and ASCII punctuation; keep accents | `O'Connor` → `oconnor`, `José` → `josé` |
 | Country, city, postal code | Sent raw | `US`, `San Francisco`, `94107` |
 
-Hashing runs in the browser with `crypto.subtle`. Raw email, phone and names are never sent or stored; only hashes are kept. The phone hash produced by the site matches the example in OpenAI's documentation. We implement matching explicitly, rather than relying on automatic advanced matching, so the demo shows exactly what leaves the browser.
+Hashing runs in the browser with `crypto.subtle`. Raw email, phone and names are never sent or stored; only hashes are kept, and only with consent: without consent, identifiers are not hashed, stored or sent, and declining deletes stored hashes. If hashing is unavailable, identifiers are skipped and the purchase still completes.
+
+Phone hashes only match when the country code is present, and shoppers usually type national numbers, so the site adds the market's calling code (US 1, UK 44, Germany 49, Japan 81) unless the number already starts with `+` or `00`. The phone hash produced by the site matches the example in OpenAI's documentation. We implement matching explicitly, rather than relying on automatic advanced matching, so the demo shows exactly what leaves the browser.
 
 ## 6. Consent and international
 
@@ -112,7 +117,22 @@ Hashing runs in the browser with `crypto.subtle`. Raw email, phone and names are
 - `market_selected` records demand from markets before Nano Motion launches there.
 - A privacy notice page lists the pixel, its first-party cookies (`__oppref`, `__obref`) and exactly what is sent.
 
-## 7. What the pixel cannot do, and the alternative
+## 7. Security
+
+| Control | What the site does | Why |
+| --- | --- | --- |
+| Content Security Policy | Enforced via `vercel.json`: scripts only from this site, `bzrcdn.openai.com` and one hashed inline script (the pixel snippet); connections only to this site and OpenAI's pixel domains; no plugins, no framing, forms post only to this site | Exactly the sources OpenAI's docs list; nothing else can run or send data |
+| No `unsafe-inline` for scripts | Page logic lives in `assets/pages/*.js`; the only inline script is the pixel snippet, allowed by its SHA-256 hash | OpenAI's docs advise against adding `unsafe-inline` for the pixel. A nonce needs a server per response; a hash suits a static site |
+| Other headers | `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` (camera, microphone, geolocation, payment off), `Strict-Transport-Security`, `frame-ancestors 'none'` | Standard hardening a CTO's security team will check first |
+| Cookies | Both pixel cookies are first-party (`__oppref`, `__obref`), set on this site's domain | Third-party cookie blocking does not affect the pixel |
+| Keys | No API key in the browser. The pixel needs only its public Pixel ID | The Conversions API key lives only on the server |
+| Personal data | Only SHA-256 hashes leave the browser, only with consent | Data minimization |
+
+**Why no Subresource Integrity (SRI) on `oaiq.min.js`:** the SDK is evergreen (OpenAI updates it in place), so a pinned hash would break the pixel on the next release. The control is the CSP allowlist plus vendor review; the trade-off is worth stating plainly.
+
+**When the CSP changes:** if the pixel snippet's text changes, its hash in `vercel.json` must be recomputed, or the browser blocks it.
+
+## 8. What the pixel cannot do, and the alternative
 
 The pixel is the right day-one tool: one snippet, live in days. OpenAI's own documentation calls the Conversions API more reliable than the pixel alone.
 
@@ -153,7 +173,7 @@ The pixel is the right day-one tool: one snippet, live in days. OpenAI's own doc
 
 No engineering capacity? OpenAI's Hightouch, Tealium and LiveRamp integrations can send server events from existing systems.
 
-## 8. Launch checklist (beyond this site)
+## 9. Launch checklist (beyond this site)
 
 - Complete business verification before launch, so serving is not throttled.
 - Tag every ad URL with UTM parameters (`utm_source=chatgpt&utm_medium=paid&utm_campaign=...`) so Nano Motion's own analytics credits ChatGPT instead of reporting it as direct traffic.
@@ -161,7 +181,7 @@ No engineering capacity? OpenAI's Hightouch, Tealium and LiveRamp integrations c
 - Turn `debug` off in production; it logs to the console for every visitor. It is on here so reviewers can see SDK activity.
 - After 4 to 6 weeks of spend, run a geo-based incrementality test. People research in a conversation and buy later, so click attribution likely under-counts ChatGPT; a lift test gives a causal number finance trusts.
 
-## 9. How it is built
+## 10. How it is built
 
 ```
 index.html          Home: hero, new arrivals, "tested by" athletes
@@ -181,15 +201,18 @@ assets/tracking.js  The only file that calls oaiq
 assets/consent.js   Banner and consent calls
 assets/eventlog.js  Demo event log (?demo=1)
 assets/layout.js    Header, footer, market selector, page_viewed
+assets/pages/*.js   Page logic, one file per page (keeps inline scripts out for the CSP)
+measurement.html    This README rendered for reviewers (tools/render-measurement.py)
+vercel.json         Security headers and Content Security Policy
 ```
 
 **`tracking.js` owns every pixel call:** consent gating, minor-unit amounts, `contents[]` with variant IDs, event IDs and the fire-once guard, normalization and hashing, and logging. One integration surface to audit, and the natural place to add the Conversions API hand-off later.
 
 **Head snippet, identical on every page, top of `<head>`:** decide consent → load the SDK → `oaiq('consent', false)` if needed → `oaiq('init', ...)` with stored hashes. Preconnect to `bzrcdn.openai.com`. If Nano Motion's real site has a Content Security Policy, add `https://bzrcdn.openai.com` to `script-src` and `connect-src`, and `https://bzr.openai.com` to `connect-src` and `img-src`.
 
-## 10. Verification
+## 11. Verification
 
-The site was tested end to end in headless Chromium with every `oaiq` call recorded. 48 checks pass, including:
+The site was tested end to end in headless Chromium with every `oaiq` call recorded, served with the production security headers. 63 checks pass, including:
 
 - Pixel ID on every page; `page_viewed` once per load in the documented shape
 - `items_added` 9800 USD with variant ID; kit add sends one event with 3 items
@@ -201,7 +224,13 @@ The site was tested end to end in headless Chromium with every `oaiq` call recor
 - UK decline: nothing sent after navigation
 - Global Privacy Control (US): `consent false` before `init`, nothing sent, opt-out shown in the footer and the demo log
 - Japan: ¥14,800 sent as `14800`
+- Phone numbers typed in national format get the right country code (US, UK, Germany, Japan)
+- 2,000 generated order IDs, all unique
+- A kit never adds a sold-out size; the Fit Finder never recommends one
+- Without consent, identifiers are not hashed, stored or sent; declining deletes stored hashes
+- Zero Content Security Policy violations on all 11 pages
 - No JavaScript errors on any page; no horizontal scroll on a 390px phone
+- Accessibility scan (axe-core): no violations on any page
 
 **What we could not verify here:** that OpenAI received and processed the events. That needs Ads Manager access for this Pixel ID (Events Manager, or the recent-events monitoring endpoint). On a live engagement this is the first thing to confirm with the customer.
 

@@ -31,6 +31,8 @@
     user: __nmUser        // hashed identifiers only (SHA-256), plus raw country/city/postal code
   });
 </script>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<meta name="robots" content="noindex">
 <link rel="stylesheet" href="assets/styles.css">
 </head>
 <body data-page="checkout">
@@ -39,10 +41,10 @@
     <form id="co" autocomplete="on">
       <h1 style="font-size:2.2rem">Checkout</h1>
       <p class="muted">Guest checkout. This is a demo store: no payment is taken and nothing ships.</p>
-      <h3>Contact</h3>
+      <h2 class="h3">Contact</h2>
       <label class="field">Email<input name="email" type="email" required autocomplete="email"></label>
       <label class="field">Phone (optional)<input name="phone" type="tel" autocomplete="tel" placeholder="+1 415 555 2671"></label>
-      <h3>Shipping</h3>
+      <h2 class="h3">Shipping</h2>
       <div class="row2">
         <label class="field">First name<input name="firstName" required autocomplete="given-name"></label>
         <label class="field">Last name<input name="lastName" required autocomplete="family-name"></label>
@@ -53,7 +55,7 @@
         <label class="field">Postal code<input name="postalCode" required autocomplete="postal-code"></label>
       </div>
       <label class="field">Country<input name="country" id="co-country" readonly></label>
-      <h3>Payment</h3>
+      <h2 class="h3">Payment</h2>
       <label class="field">Card number<input value="4242 4242 4242 4242 (demo, not charged)" readonly></label>
       <button class="btn btn-block" id="place">Place order</button>
       <p class="note">Your email is hashed (SHA-256) in your browser before anything is shared for ad measurement. See our <a href="privacy.html">privacy notice</a>.</p>
@@ -68,47 +70,6 @@
 <script src="assets/tracking.js"></script>
 <script src="assets/consent.js"></script>
 <script src="assets/layout.js"></script>
-<script>
-  window.NMPage = function () {
-    var lines = NM.cartLines();
-    if (!lines.length) { location.replace('cart.html'); return; }
-    var m = NM.market();
-    document.getElementById('co-country').value = m.label + ' (' + m.country + ')';
-    var total = NM.cartTotal();
-    document.getElementById('co-summary').innerHTML = '<strong>Order summary</strong>' +
-      lines.map(function (l) {
-        return '<div class="sumrow"><span>' + NM.esc(l.product.name) + ' · ' + l.size + ' × ' + l.qty + '</span><span>' + NM.format(l.total) + '</span></div>';
-      }).join('') +
-      '<div class="sumrow total"><span>Total</span><span>' + NM.format(total) + '</span></div>';
-
-    NMT.checkoutStarted();
-
-    var form = document.getElementById('co');
-    form.onsubmit = async function (e) {
-      e.preventDefault();
-      document.getElementById('place').disabled = true;
-      var f = new FormData(form);
-
-      // 1. Matching data: normalized + hashed in the browser, then pixel re-init
-      await NMT.identify({
-        email: f.get('email'), phone: f.get('phone'),
-        firstName: f.get('firstName'), lastName: f.get('lastName'),
-        city: f.get('city'), postalCode: f.get('postalCode'), country: m.country
-      });
-
-      // 2. Create the order once. Its ID becomes the event_id (idempotency key)
-      var order = {
-        id: NM.newId('NM-'),
-        currency: m.currency,
-        total: total, // merchandise subtotal in minor units (excludes tax and shipping)
-        contents: lines.map(NMT.lineToContent),
-        createdAt: Date.now()
-      };
-      NM.saveOrder(order);
-      NM.saveCart([]);
-      location.href = 'confirmation.html?order=' + encodeURIComponent(order.id);
-    };
-  };
-</script>
+<script src="assets/pages/checkout.js"></script>
 </body>
 </html>

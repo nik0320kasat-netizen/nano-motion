@@ -77,9 +77,17 @@
   };
 
   // ---- Orders and IDs ---------------------------------------------------------
+  // The ID doubles as the pixel event_id, and OpenAI dedupes on Pixel ID + event + ID
+  // across ALL shoppers, so two orders must never share one. In production the order
+  // system issues it; this demo makes a collision-resistant one: time + random,
+  // e.g. NM-MGN4X2Q1-7F3A9C21.
   NM.newId = function (prefix) {
-    var n = Math.floor(100000 + Math.random() * 900000);
-    return prefix + n;
+    var r = '';
+    try {
+      var a = new Uint8Array(4); crypto.getRandomValues(a);
+      r = Array.from(a).map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+    } catch (e) { r = Math.random().toString(16).slice(2, 10); }
+    return prefix + Date.now().toString(36).toUpperCase() + '-' + r.toUpperCase();
   };
   NM.saveOrder = function (order) {
     var orders = read('nm_orders', {});

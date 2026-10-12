@@ -60,8 +60,8 @@
       '<div class="wrap foot-grid">' +
         '<div><div class="logo small"><span class="logo-mark"></span>NANO MOTION</div>' +
         '<p class="muted">Premium performance apparel, tested by people who train every day.</p></div>' +
-        '<div><h4>Shop</h4><a href="shop.html">All products</a><a href="fit-finder.html">Fit Finder</a><a href="membership.html">Nano Motion Club</a></div>' +
-        '<div><h4>Help</h4><a href="privacy.html">Privacy notice</a>' + choice + '<a href="README.md">How this site is measured</a></div>' +
+        '<div><h2 class="foot-h">Shop</h2><a href="shop.html">All products</a><a href="fit-finder.html">Fit Finder</a><a href="membership.html">Nano Motion Club</a></div>' +
+        '<div><h2 class="foot-h">Help</h2><a href="privacy.html">Privacy notice</a>' + choice + '<a href="measurement.html">How this site is measured</a></div>' +
       '</div>' +
       '<div class="wrap foot-note">Demo store for an OpenAI Ads measurement exercise. No real products, payments or orders. ' +
       'Add <code>?demo=1</code> to any URL to see the pixel event log.</div>';

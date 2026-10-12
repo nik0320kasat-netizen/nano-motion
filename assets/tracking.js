@@ -15,6 +15,7 @@
 (function () {
   var NM = window.NM;
   var PIXEL_ID = '1GtqyL7Rgr4qk4pR3LFbss';
+  var DEBUG = true; // demo only: lets reviewers see SDK activity in the Console. Off in production.
 
   var STANDARD = [
     'page_viewed', 'contents_viewed', 'items_added', 'checkout_started', 'order_created',
@@ -76,14 +77,26 @@
       return false;
     }
     var ok = send(eventName, data, { event_id: id });
-    if (ok) { sent.push(key); NM.write('nm_sent', sent); }
+    if (ok) { sent.push(key); NM.write('nm_sent', sent.slice(-200)); } // bounded memory
     return ok;
   }
 
   // ---- Identity: normalize, hash, re-init -----------------------------------------
   function normEmail(v) { return String(v).trim().toLowerCase(); }
-  function normPhone(v) {
-    var d = String(v).replace(/[\s().\-]/g, '').replace(/^\+/, '').replace(/^0+/, '');
+
+  // Phone: the hash only matches if the country code is present. Shoppers usually
+  // type national numbers (415 555 2671, 07911 123456), so we add the market's
+  // calling code when the number is not already international (+ or 00 prefix).
+  var CALLING_CODE = { US: '1', GB: '44', DE: '49', JP: '81' };
+  function normPhone(v, country) {
+    var raw = String(v).trim();
+    var intl = /^(\+|00)/.test(raw);
+    var d = raw.replace(/\D/g, '');
+    var cc = CALLING_CODE[country];
+    if (intl) d = d.replace(/^0+/, '');                                  // +44… or 0044…
+    else if (cc === '1' && d.length === 10) d = '1' + d;                 // US national format
+    else if (cc && cc !== '1' && /^0/.test(d)) d = cc + d.replace(/^0+/, ''); // drop trunk 0, add code
+    else d = d.replace(/^0+/, '');
     return /^\d{8,15}$/.test(d) ? d : null;
   }
   function normName(v) {
@@ -104,13 +117,25 @@
     return parts[0].charAt(0) + '***@' + (parts[1] || '');
   }
 
+  // Never throws: a hashing failure (no secure context, old browser) must not block a checkout.
   async function identify(raw) {
+    // No consent: identifiers are neither hashed, stored nor sent.
+    if (!NM.consentGranted()) {
+      log({ event: 'init (user data)', status: 'held', note: 'no consent: not hashed, stored or sent' });
+      return null;
+    }
     var user = NM.read('nm_user', {});
     var shown = {};
-    if (raw.email)     { user.email_sha256 = await sha256(normEmail(raw.email)); shown.email = maskEmail(raw.email); }
-    if (raw.phone && normPhone(raw.phone)) { user.phone_number_sha256 = await sha256(normPhone(raw.phone)); shown.phone = '***'; }
-    if (raw.firstName && normName(raw.firstName)) user.first_name_sha256 = await sha256(normName(raw.firstName));
-    if (raw.lastName && normName(raw.lastName))   user.last_name_sha256 = await sha256(normName(raw.lastName));
+    try {
+      var phone = raw.phone ? normPhone(raw.phone, raw.country) : null;
+      if (raw.email) { user.email_sha256 = await sha256(normEmail(raw.email)); shown.email = maskEmail(raw.email); }
+      if (phone)     { user.phone_number_sha256 = await sha256(phone); shown.phone = '***'; }
+      if (raw.firstName && normName(raw.firstName)) user.first_name_sha256 = await sha256(normName(raw.firstName));
+      if (raw.lastName && normName(raw.lastName))   user.last_name_sha256 = await sha256(normName(raw.lastName));
+    } catch (e) {
+      log({ event: 'init (user data)', status: 'error', note: 'hashing unavailable, identifiers skipped' });
+      return null;
+    }
     // Geography is sent raw, per the docs
     if (raw.country) user.country = raw.country;
     if (raw.city) user.city = String(raw.city).trim();
@@ -118,11 +143,7 @@
 
     NM.write('nm_user', user); // hashes only; raw values are never stored
 
-    if (!NM.consentGranted()) {
-      log({ event: 'init (user data)', status: 'held', note: 'no consent, not sent', data: { user: user }, shown: shown });
-      return user;
-    }
-    if (oaiqAvailable()) window.oaiq('init', { pixelId: PIXEL_ID, user: user });
+    if (oaiqAvailable()) window.oaiq('init', { pixelId: PIXEL_ID, debug: DEBUG, user: user });
     log({ event: 'init (user data)', status: 'sent', note: 'hashed in browser', data: { user: user }, shown: shown });
     return user;
   }

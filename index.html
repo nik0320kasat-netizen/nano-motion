@@ -31,6 +31,8 @@
     user: __nmUser        // hashed identifiers only (SHA-256), plus raw country/city/postal code
   });
 </script>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<meta name="robots" content="noindex">
 <link rel="stylesheet" href="assets/styles.css">
 </head>
 <body data-page="home">
@@ -67,7 +69,7 @@
       <div class="testers">
         <div class="tester"><div class="who"><div class="avatar" style="background:#2f5d50">MR</div><div><strong>Maya R.</strong><div class="muted">Marathoner, 2:51 PR</div></div></div>“The Stride jacket packs into its own pocket. I forget it is there until the wind picks up.”</div>
         <div class="tester"><div class="who"><div class="avatar" style="background:#28344a">DK</div><div><strong>Dev K.</strong><div class="muted">Hybrid athlete</div></div></div>“Interval Shorts are the first pair where the phone does not bounce on a 400.”</div>
-        <div class="tester"><div class="who"><div class="avatar" style="background:#9aa98f">AL</div><div><strong>Ana L.</strong><div class="muted">Yoga instructor</div></div></div>“Flow Legging passes the forward-fold test. I teach six classes a week in them.”</div>
+        <div class="tester"><div class="who"><div class="avatar" style="background:#5d6b54">AL</div><div><strong>Ana L.</strong><div class="muted">Yoga instructor</div></div></div>“Flow Legging passes the forward-fold test. I teach six classes a week in them.”</div>
       </div>
     </div>
   </section>
@@ -86,11 +88,6 @@
 <script src="assets/tracking.js"></script>
 <script src="assets/consent.js"></script>
 <script src="assets/layout.js"></script>
-<script>
-  window.NMPage = function () {
-    var ids = ['NM-RJ-01', 'NM-LG-03', 'NM-RS-05', 'NM-SH-07'];
-    document.getElementById('home-grid').innerHTML = ids.map(function (id) { return NM.tile(NM.product(id)); }).join('');
-  };
-</script>
+<script src="assets/pages/index.js"></script>
 </body>
 </html>

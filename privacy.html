@@ -31,6 +31,8 @@
     user: __nmUser        // hashed identifiers only (SHA-256), plus raw country/city/postal code
   });
 </script>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<meta name="robots" content="noindex">
 <link rel="stylesheet" href="assets/styles.css">
 </head>
 <body data-page="privacy">
@@ -39,7 +41,7 @@
   <h1 style="font-size:2.4rem">How we measure our advertising</h1>
   <p>Nano Motion uses the <strong>ChatGPT Ads Measurement Pixel</strong> (provided by OpenAI) to understand whether our ads in ChatGPT lead to visits, purchases and Club sign-ups. This page explains what is sent and how to control it. (This is a demo store built for a measurement exercise.)</p>
 
-  <h3>What is sent</h3>
+  <h2 class="h3">What is sent</h2>
   <table>
     <tr><th>Data</th><th>Example</th><th>Form</th></tr>
     <tr><td>Event name and page</td><td>order_created on the confirmation page</td><td>As is</td></tr>
@@ -48,7 +50,7 @@
     <tr><td>Country, city, postal code</td><td>US, San Francisco, 94107</td><td>As entered</td></tr>
   </table>
 
-  <h3>Cookies set by the pixel</h3>
+  <h2 class="h3">Cookies set by the pixel</h2>
   <table>
     <tr><th>Cookie</th><th>Purpose</th><th>Lifetime</th></tr>
     <tr><td><code>__oppref</code></td><td>Stores the attribution reference from a ChatGPT ad click, so a later purchase can be linked to that click</td><td>30 days</td></tr>
@@ -56,7 +58,10 @@
   </table>
   <p class="note">Lifetimes are what the pixel requests; your browser may shorten them.</p>
 
-  <h3>Your choices</h3>
+  <h2 class="h3">What stays in your browser</h2>
+  <p>Your bag, market and consent choice are kept in your browser's local storage. If you have agreed to measurement, the SHA-256 hashes of identifiers you entered are kept there too, so later pages can pass them to the pixel. Raw email, phone and names are never stored. Declining removes the stored hashes along with the pixel's cookies.</p>
+
+  <h2 class="h3">Your choices</h2>
   <ul>
     <li><strong>United Kingdom and Germany:</strong> nothing is sent until you accept the measurement banner. Events from before you accept are not sent later. Declining removes the pixel's cookies.</li>
     <li><strong>United States and Japan:</strong> measurement is on by default. Use "Your privacy choices" in the footer to opt out at any time.</li>
