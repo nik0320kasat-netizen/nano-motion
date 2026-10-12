@@ -51,6 +51,8 @@
     f.className = 'site-footer';
     var choice = m.optIn
       ? '<a href="#" id="nm-consent-open">Cookie and measurement choices</a>'
+      : NM.gpc() && NM.consentState() !== 'granted'
+        ? '<a href="privacy.html">Opted out: Global Privacy Control honored</a>'
       : (NM.consentState() === 'denied'
           ? '<a href="#" id="nm-optin">Allow ad measurement</a>'
           : '<a href="#" id="nm-optout">Your privacy choices</a>');

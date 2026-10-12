@@ -58,6 +58,13 @@
 
   function init() {
     if (NM.market().optIn && NM.consentState() === 'unset') show();
+    // Log the GPC opt-out once per browser session so it is visible in the demo log
+    var logged = false;
+    try { logged = sessionStorage.getItem('nm_gpc_logged') === '1'; } catch (e) {}
+    if (NM.gpc() && NM.consentState() !== 'granted' && !logged && window.NMLog) {
+      window.NMLog.add({ event: 'consent', status: 'held', note: 'Global Privacy Control detected: opted out', data: { consent: false, gpc: true } });
+      try { sessionStorage.setItem('nm_gpc_logged', '1'); } catch (e) {}
+    }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();

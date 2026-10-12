@@ -30,8 +30,12 @@
   NM.setConsent = function (state) {
     try { localStorage.setItem('nm_consent', state); } catch (e) {}
   };
+  // Global Privacy Control: a browser-level opt-out signal that CCPA and several
+  // other US states require sites to honor. Treated like an opt-in market: nothing
+  // sends unless the visitor explicitly grants consent on this site.
+  NM.gpc = function () { return navigator.globalPrivacyControl === true; };
   NM.consentGranted = function () {
-    if (!NM.market().optIn) return NM.consentState() !== 'denied';
+    if (!NM.market().optIn && !NM.gpc()) return NM.consentState() !== 'denied';
     return NM.consentState() === 'granted';
   };
 

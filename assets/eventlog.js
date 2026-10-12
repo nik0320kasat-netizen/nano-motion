@@ -61,14 +61,32 @@
       '<div class="nmlog-bar">' +
         '<strong>OpenAI Pixel · event log</strong>' +
         '<span class="nmlog-legend">T1 pay for · T2 volume · T3 insight</span>' +
-        '<button type="button" data-act="clear">Clear</button>' +
-        '<button type="button" data-act="min">–</button>' +
+        '<button type="button" data-act="clear" title="Clear the log">Clear</button>' +
+        '<button type="button" data-act="min" title="Minimize">–</button>' +
+        '<button type="button" data-act="close" title="Close (reopen with ?demo=1)">×</button>' +
       '</div><ol class="nmlog-list"></ol>';
     document.body.appendChild(panel);
     document.body.classList.add('has-nmlog');
     list = panel.querySelector('.nmlog-list');
+    var minBtn = panel.querySelector('[data-act=min]');
+    function setMin(on) {
+      panel.classList.toggle('min', on);
+      document.body.classList.toggle('nmlog-min', on);
+      minBtn.textContent = on ? '+' : '–';
+      minBtn.title = on ? 'Expand' : 'Minimize';
+      try { on ? sessionStorage.setItem('nm_demo_min', '1') : sessionStorage.removeItem('nm_demo_min'); } catch (e) {}
+    }
+    var startMin = false;
+    try { startMin = sessionStorage.getItem('nm_demo_min') === '1'; } catch (e) {}
+    setMin(startMin);
     panel.querySelector('[data-act=clear]').onclick = function () { save([]); render(); };
-    panel.querySelector('[data-act=min]').onclick = function () { panel.classList.toggle('min'); };
+    minBtn.onclick = function () { setMin(!panel.classList.contains('min')); };
+    panel.querySelector('[data-act=close]').onclick = function () {
+      // Turns demo mode off for this browser session; ?demo=1 brings it back
+      try { sessionStorage.removeItem('nm_demo'); sessionStorage.removeItem('nm_demo_min'); } catch (e) {}
+      panel.remove(); panel = null;
+      document.body.classList.remove('has-nmlog', 'nmlog-min');
+    };
     render();
   }
 

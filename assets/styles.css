@@ -222,3 +222,8 @@ body.has-nmlog .consent { bottom: calc(40vh + 12px); }
   body.has-nmlog .nmlog { top: 0; bottom: 0; left: auto; right: 0; width: 440px; max-height: none; border-radius: 0; }
   body.has-nmlog .consent { bottom: 16px; right: 456px; }
 }
+/* Minimized: collapse to the title bar in the bottom-right corner and give the store its full width back */
+body.has-nmlog.nmlog-min { padding-right: 0; padding-bottom: 56px; }
+body.has-nmlog.nmlog-min .nmlog { top: auto; bottom: 0; left: auto; right: 16px; width: min(420px, calc(100vw - 32px)); max-height: none; border-radius: 12px 12px 0 0; }
+body.has-nmlog.nmlog-min .nmlog-bar { border-bottom: 0; }
+body.has-nmlog.nmlog-min .consent { bottom: 64px; right: 16px; }

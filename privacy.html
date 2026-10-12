@@ -12,7 +12,8 @@
     var m = { country: 'US' }, c = null;
     try { m = JSON.parse(localStorage.getItem('nm_market') || '{"country":"US"}'); c = localStorage.getItem('nm_consent'); } catch (e) {}
     var optIn = ['GB', 'DE'].indexOf(m.country) !== -1;   // opt-in markets
-    window.__nmDenied = c === 'denied' || (optIn && c !== 'granted');
+    var gpc = navigator.globalPrivacyControl === true;             // browser opt-out signal (CCPA and other US states)
+    window.__nmDenied = c === 'denied' || ((optIn || gpc) && c !== 'granted');
   })();
   (function (w, d, s, u) {
     if (w.oaiq) return;
@@ -59,6 +60,7 @@
   <ul>
     <li><strong>United Kingdom and Germany:</strong> nothing is sent until you accept the measurement banner. Events from before you accept are not sent later. Declining removes the pixel's cookies.</li>
     <li><strong>United States and Japan:</strong> measurement is on by default. Use "Your privacy choices" in the footer to opt out at any time.</li>
+    <li><strong>Global Privacy Control:</strong> if your browser sends a GPC signal, we treat it as an opt-out in every market and send nothing.</li>
   </ul>
   <p>Specific legal requirements per country are set with our privacy counsel. This page demonstrates the mechanism.</p>
   <p class="muted">Measurement data is used to report on and improve advertising performance. OpenAI states that data collected through the pixel is not currently used for user-level personalization.</p>

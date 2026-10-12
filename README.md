@@ -3,7 +3,7 @@
 A demo store for Nano Motion, a fictional premium activewear brand launching on ChatGPT Ads. The site exists to show one thing well: **the OpenAI Measurement Pixel deployed deliberately**, with a ranked signal plan, correct payloads, idempotent conversions, consent by market, and a clear line where the pixel stops and the Conversions API takes over.
 
 - **Live site:** https://nano-motion-three.vercel.app/
-- **Demo mode:** add `?demo=1` to any URL to open the pixel event log beside the store (off with `?demo=0`)
+- **Demo mode:** add `?demo=1` to any URL to open the pixel event log beside the store. In the panel, `–` minimizes it to a corner bar, `×` closes it (or use `?demo=0`)
 - **Pixel ID:** `1GtqyL7Rgr4qk4pR3LFbss`
 - **Stack:** plain HTML, CSS, JavaScript. No framework, no build step, no backend, so every line is readable.
 
@@ -107,6 +107,7 @@ Hashing runs in the browser with `crypto.subtle`. Raw email, phone and names are
 
 - In opt-in markets the head snippet calls `oaiq('consent', false)` **before** `init`. Nothing is sent until the visitor accepts. Events from before consent are not replayed, by design. Declining also removes the pixel's cookies.
 - In production, Nano Motion's consent platform (OneTrust, Osano or similar) makes these same calls; the banner here stands in for it. Legal rules per country are set with their privacy counsel.
+- **Global Privacy Control is honored in every market.** If the browser sends GPC (`navigator.globalPrivacyControl`), the head snippet treats it like an opt-in market: `consent false` before `init`, nothing sent unless the visitor explicitly opts in on this site. CCPA and several other US states require honoring GPC.
 - One Pixel ID covers all markets. Multiple Pixel IDs are meant for multiple advertisers or partners on one site, not one per country.
 - `market_selected` records demand from markets before Nano Motion launches there.
 - A privacy notice page lists the pixel, its first-party cookies (`__oppref`, `__obref`) and exactly what is sent.
@@ -188,7 +189,7 @@ assets/layout.js    Header, footer, market selector, page_viewed
 
 ## 10. Verification
 
-The site was tested end to end in headless Chromium with every `oaiq` call recorded. 37 checks pass, including:
+The site was tested end to end in headless Chromium with every `oaiq` call recorded. 48 checks pass, including:
 
 - Pixel ID on every page; `page_viewed` once per load in the documented shape
 - `items_added` 9800 USD with variant ID; kit add sends one event with 3 items
@@ -198,6 +199,7 @@ The site was tested end to end in headless Chromium with every `oaiq` call recor
 - No raw email, phone or name in any call or in storage
 - Germany: `consent false` set before `init`, banner shown, nothing sent until accept, then `items_added` 8900 EUR
 - UK decline: nothing sent after navigation
+- Global Privacy Control (US): `consent false` before `init`, nothing sent, opt-out shown in the footer and the demo log
 - Japan: ¥14,800 sent as `14800`
 - No JavaScript errors on any page; no horizontal scroll on a 390px phone
 
