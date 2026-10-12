@@ -229,13 +229,3 @@ body.has-nmlog.nmlog-min .nmlog { top: auto; bottom: 0; left: auto; right: 16px;
 body.has-nmlog.nmlog-min .nmlog-bar { border-bottom: 0; }
 body.has-nmlog.nmlog-min .consent { bottom: 64px; right: 16px; }
 
-/* Measurement plan page (rendered README) */
-.prose.doc { max-width: 920px; }
-.prose.doc h1 { font-size: 2.2rem; }
-.prose.doc h2 { font-size: 1.45rem; margin-top: 2em; }
-.prose.doc h3 { margin-top: 1.5em; }
-.prose.doc pre { background: #ecebe5; padding: 14px 16px; border-radius: 8px; overflow-x: auto; font-size: .82rem; line-height: 1.45; }
-.prose.doc pre code { background: none; padding: 0; }
-.table-wrap { overflow-x: auto; margin: 12px 0; }
-.table-wrap table { min-width: 560px; }
-.prose.doc code { overflow-wrap: anywhere; }

@@ -6,7 +6,7 @@ A demo store for Nano Motion, a fictional premium activewear brand launching on 
 - **Demo mode:** add `?demo=1` to any URL to open the pixel event log beside the store. In the panel, `–` minimizes it to a corner bar, `×` closes it (or use `?demo=0`)
 - **Pixel ID:** `1GtqyL7Rgr4qk4pR3LFbss`
 - **Stack:** plain HTML, CSS, JavaScript. No framework, no build step, no backend, so every line is readable.
-- **This page on the site:** `measurement.html` is rendered from this README, so reviewers can read the plan without repo access.
+- **Source code:** this repository; the site footer links here ("Measurement plan and source code").
 
 ---
 
@@ -202,7 +202,6 @@ assets/consent.js   Banner and consent calls
 assets/eventlog.js  Demo event log (?demo=1)
 assets/layout.js    Header, footer, market selector, page_viewed
 assets/pages/*.js   Page logic, one file per page (keeps inline scripts out for the CSP)
-measurement.html    This README rendered for reviewers (tools/render-measurement.py)
 vercel.json         Security headers and Content Security Policy
 ```
 
@@ -212,7 +211,7 @@ vercel.json         Security headers and Content Security Policy
 
 ## 11. Verification
 
-The site was tested end to end in headless Chromium with every `oaiq` call recorded, served with the production security headers. 63 checks pass, including:
+The site was tested end to end in headless Chromium with every `oaiq` call recorded, served with the production security headers. 62 checks pass, including:
 
 - Pixel ID on every page; `page_viewed` once per load in the documented shape
 - `items_added` 9800 USD with variant ID; kit add sends one event with 3 items
@@ -228,7 +227,7 @@ The site was tested end to end in headless Chromium with every `oaiq` call recor
 - 2,000 generated order IDs, all unique
 - A kit never adds a sold-out size; the Fit Finder never recommends one
 - Without consent, identifiers are not hashed, stored or sent; declining deletes stored hashes
-- Zero Content Security Policy violations on all 11 pages
+- Zero Content Security Policy violations on all 10 pages
 - No JavaScript errors on any page; no horizontal scroll on a 390px phone
 - Accessibility scan (axe-core): no violations on any page
 
