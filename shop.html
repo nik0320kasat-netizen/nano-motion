@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shop all | Nano Motion</title>
+<link rel="preconnect" href="https://bzrcdn.openai.com">
+<!-- OpenAI Measurement Pixel: same block, top of <head>, on every page.
+     Order matters: 1) decide consent  2) load SDK  3) set consent BEFORE init  4) init. -->
+<script>
+  (function () {
+    var m = { country: 'US' }, c = null;
+    try { m = JSON.parse(localStorage.getItem('nm_market') || '{"country":"US"}'); c = localStorage.getItem('nm_consent'); } catch (e) {}
+    var optIn = ['GB', 'DE'].indexOf(m.country) !== -1;   // opt-in markets
+    window.__nmDenied = c === 'denied' || (optIn && c !== 'granted');
+  })();
+  (function (w, d, s, u) {
+    if (w.oaiq) return;
+    var q = function () { q.q.push(arguments); };
+    q.q = []; w.oaiq = q;
+    var js = d.createElement(s); js.async = true; js.src = u;
+    var f = d.getElementsByTagName(s)[0]; f.parentNode.insertBefore(js, f);
+  })(window, document, "script", "https://bzrcdn.openai.com/sdk/oaiq.min.js");
+  if (window.__nmDenied) oaiq("consent", false);
+  var __nmUser = {};
+  try { __nmUser = JSON.parse(localStorage.getItem('nm_user') || '{}'); } catch (e) {}
+  oaiq("init", {
+    pixelId: "1GtqyL7Rgr4qk4pR3LFbss",
+    debug: true,          // on for this demo so reviewers can see SDK activity; off in production
+    user: __nmUser        // hashed identifiers only (SHA-256), plus raw country/city/postal code
+  });
+</script>
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body data-page="shop">
+<main class="section wrap">
+  <div class="section-head">
+    <div><span class="eyebrow">Shop</span><h1 style="font-size:2.4rem">All products</h1></div>
+    <span class="muted" id="shop-count"></span>
+  </div>
+  <div class="chips" id="chips"></div>
+  <div class="grid" id="shop-grid"></div>
+</main>
+
+<script src="assets/products.js"></script>
+<script src="assets/store.js"></script>
+<script src="assets/eventlog.js"></script>
+<script src="assets/tracking.js"></script>
+<script src="assets/consent.js"></script>
+<script src="assets/layout.js"></script>
+<script>
+  window.NMPage = function () {
+    var cats = ['All', 'Running', 'Training', 'Yoga', 'Outerwear', 'Accessories'];
+    var active = 'All';
+    var chips = document.getElementById('chips');
+    function render() {
+      var list = window.NM_PRODUCTS.filter(function (p) { return active === 'All' || p.category === active; });
+      document.getElementById('shop-grid').innerHTML = list.map(NM.tile).join('');
+      document.getElementById('shop-count').textContent = list.length + ' products';
+      chips.innerHTML = cats.map(function (c) {
+        return '<button class="chip" type="button" aria-pressed="' + (c === active) + '" data-c="' + c + '">' + c + '</button>';
+      }).join('');
+      chips.querySelectorAll('.chip').forEach(function (b) {
+        b.onclick = function () { active = b.getAttribute('data-c'); render(); };
+      });
+    }
+    render();
+  };
+</script>
+</body>
+</html>

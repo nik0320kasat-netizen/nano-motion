@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Checkout | Nano Motion</title>
+<link rel="preconnect" href="https://bzrcdn.openai.com">
+<!-- OpenAI Measurement Pixel: same block, top of <head>, on every page.
+     Order matters: 1) decide consent  2) load SDK  3) set consent BEFORE init  4) init. -->
+<script>
+  (function () {
+    var m = { country: 'US' }, c = null;
+    try { m = JSON.parse(localStorage.getItem('nm_market') || '{"country":"US"}'); c = localStorage.getItem('nm_consent'); } catch (e) {}
+    var optIn = ['GB', 'DE'].indexOf(m.country) !== -1;   // opt-in markets
+    window.__nmDenied = c === 'denied' || (optIn && c !== 'granted');
+  })();
+  (function (w, d, s, u) {
+    if (w.oaiq) return;
+    var q = function () { q.q.push(arguments); };
+    q.q = []; w.oaiq = q;
+    var js = d.createElement(s); js.async = true; js.src = u;
+    var f = d.getElementsByTagName(s)[0]; f.parentNode.insertBefore(js, f);
+  })(window, document, "script", "https://bzrcdn.openai.com/sdk/oaiq.min.js");
+  if (window.__nmDenied) oaiq("consent", false);
+  var __nmUser = {};
+  try { __nmUser = JSON.parse(localStorage.getItem('nm_user') || '{}'); } catch (e) {}
+  oaiq("init", {
+    pixelId: "1GtqyL7Rgr4qk4pR3LFbss",
+    debug: true,          // on for this demo so reviewers can see SDK activity; off in production
+    user: __nmUser        // hashed identifiers only (SHA-256), plus raw country/city/postal code
+  });
+</script>
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body data-page="checkout">
+<main class="wrap">
+  <div class="two-col">
+    <form id="co" autocomplete="on">
+      <h1 style="font-size:2.2rem">Checkout</h1>
+      <p class="muted">Guest checkout. This is a demo store: no payment is taken and nothing ships.</p>
+      <h3>Contact</h3>
+      <label class="field">Email<input name="email" type="email" required autocomplete="email"></label>
+      <label class="field">Phone (optional)<input name="phone" type="tel" autocomplete="tel" placeholder="+1 415 555 2671"></label>
+      <h3>Shipping</h3>
+      <div class="row2">
+        <label class="field">First name<input name="firstName" required autocomplete="given-name"></label>
+        <label class="field">Last name<input name="lastName" required autocomplete="family-name"></label>
+      </div>
+      <label class="field">Address<input name="address" required autocomplete="street-address"></label>
+      <div class="row2">
+        <label class="field">City<input name="city" required autocomplete="address-level2"></label>
+        <label class="field">Postal code<input name="postalCode" required autocomplete="postal-code"></label>
+      </div>
+      <label class="field">Country<input name="country" id="co-country" readonly></label>
+      <h3>Payment</h3>
+      <label class="field">Card number<input value="4242 4242 4242 4242 (demo, not charged)" readonly></label>
+      <button class="btn btn-block" id="place">Place order</button>
+      <p class="note">Your email is hashed (SHA-256) in your browser before anything is shared for ad measurement. See our <a href="privacy.html">privacy notice</a>.</p>
+    </form>
+    <aside class="summary" id="co-summary"></aside>
+  </div>
+</main>
+
+<script src="assets/products.js"></script>
+<script src="assets/store.js"></script>
+<script src="assets/eventlog.js"></script>
+<script src="assets/tracking.js"></script>
+<script src="assets/consent.js"></script>
+<script src="assets/layout.js"></script>
+<script>
+  window.NMPage = function () {
+    var lines = NM.cartLines();
+    if (!lines.length) { location.replace('cart.html'); return; }
+    var m = NM.market();
+    document.getElementById('co-country').value = m.label + ' (' + m.country + ')';
+    var total = NM.cartTotal();
+    document.getElementById('co-summary').innerHTML = '<strong>Order summary</strong>' +
+      lines.map(function (l) {
+        return '<div class="sumrow"><span>' + NM.esc(l.product.name) + ' · ' + l.size + ' × ' + l.qty + '</span><span>' + NM.format(l.total) + '</span></div>';
+      }).join('') +
+      '<div class="sumrow total"><span>Total</span><span>' + NM.format(total) + '</span></div>';
+
+    NMT.checkoutStarted();
+
+    var form = document.getElementById('co');
+    form.onsubmit = async function (e) {
+      e.preventDefault();
+      document.getElementById('place').disabled = true;
+      var f = new FormData(form);
+
+      // 1. Matching data: normalized + hashed in the browser, then pixel re-init
+      await NMT.identify({
+        email: f.get('email'), phone: f.get('phone'),
+        firstName: f.get('firstName'), lastName: f.get('lastName'),
+        city: f.get('city'), postalCode: f.get('postalCode'), country: m.country
+      });
+
+      // 2. Create the order once. Its ID becomes the event_id (idempotency key)
+      var order = {
+        id: NM.newId('NM-'),
+        currency: m.currency,
+        total: total, // merchandise subtotal in minor units (excludes tax and shipping)
+        contents: lines.map(NMT.lineToContent),
+        createdAt: Date.now()
+      };
+      NM.saveOrder(order);
+      NM.saveCart([]);
+      location.href = 'confirmation.html?order=' + encodeURIComponent(order.id);
+    };
+  };
+</script>
+</body>
+</html>

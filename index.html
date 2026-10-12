@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nano Motion | Performance apparel for every training day</title>
+<link rel="preconnect" href="https://bzrcdn.openai.com">
+<!-- OpenAI Measurement Pixel: same block, top of <head>, on every page.
+     Order matters: 1) decide consent  2) load SDK  3) set consent BEFORE init  4) init. -->
+<script>
+  (function () {
+    var m = { country: 'US' }, c = null;
+    try { m = JSON.parse(localStorage.getItem('nm_market') || '{"country":"US"}'); c = localStorage.getItem('nm_consent'); } catch (e) {}
+    var optIn = ['GB', 'DE'].indexOf(m.country) !== -1;   // opt-in markets
+    window.__nmDenied = c === 'denied' || (optIn && c !== 'granted');
+  })();
+  (function (w, d, s, u) {
+    if (w.oaiq) return;
+    var q = function () { q.q.push(arguments); };
+    q.q = []; w.oaiq = q;
+    var js = d.createElement(s); js.async = true; js.src = u;
+    var f = d.getElementsByTagName(s)[0]; f.parentNode.insertBefore(js, f);
+  })(window, document, "script", "https://bzrcdn.openai.com/sdk/oaiq.min.js");
+  if (window.__nmDenied) oaiq("consent", false);
+  var __nmUser = {};
+  try { __nmUser = JSON.parse(localStorage.getItem('nm_user') || '{}'); } catch (e) {}
+  oaiq("init", {
+    pixelId: "1GtqyL7Rgr4qk4pR3LFbss",
+    debug: true,          // on for this demo so reviewers can see SDK activity; off in production
+    user: __nmUser        // hashed identifiers only (SHA-256), plus raw country/city/postal code
+  });
+</script>
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body data-page="home">
+<main>
+  <section class="hero">
+    <div class="hero-copy">
+      <span class="eyebrow">Fall drop · Tested on 10,000 training miles</span>
+      <h1>Gear that keeps up with how you actually train.</h1>
+      <p>Run, lift, flow, repeat. Premium performance apparel built with athletes who wear-test every piece before it ships.</p>
+      <div class="cta-row">
+        <a class="btn" href="shop.html">Shop new arrivals</a>
+        <a class="btn btn-ghost" href="fit-finder.html">Find your fit in 3 questions</a>
+      </div>
+    </div>
+    <div class="hero-art" aria-hidden="true">
+      <div class="ring" style="width:520px;height:520px;right:-140px;top:-120px"></div>
+      <div class="ring" style="width:340px;height:340px;right:-40px;top:-30px"></div>
+      <div class="ring" style="width:180px;height:180px;right:40px;top:50px"></div>
+      <div class="word">NANO MOTION · RUN · LIFT · FLOW</div>
+    </div>
+  </section>
+
+  <section class="section wrap">
+    <div class="section-head">
+      <div><span class="eyebrow">Trending</span><h2>New this week</h2></div>
+      <a href="shop.html">Shop all →</a>
+    </div>
+    <div class="grid" id="home-grid"></div>
+  </section>
+
+  <section class="section band">
+    <div class="wrap">
+      <div class="section-head"><div><span class="eyebrow">Tested by</span><h2>Built with people who train every day</h2></div></div>
+      <div class="testers">
+        <div class="tester"><div class="who"><div class="avatar" style="background:#2f5d50">MR</div><div><strong>Maya R.</strong><div class="muted">Marathoner, 2:51 PR</div></div></div>“The Stride jacket packs into its own pocket. I forget it is there until the wind picks up.”</div>
+        <div class="tester"><div class="who"><div class="avatar" style="background:#28344a">DK</div><div><strong>Dev K.</strong><div class="muted">Hybrid athlete</div></div></div>“Interval Shorts are the first pair where the phone does not bounce on a 400.”</div>
+        <div class="tester"><div class="who"><div class="avatar" style="background:#9aa98f">AL</div><div><strong>Ana L.</strong><div class="muted">Yoga instructor</div></div></div>“Flow Legging passes the forward-fold test. I teach six classes a week in them.”</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section wrap">
+    <div class="promo">
+      <div class="p1"><span class="eyebrow">Fit Finder</span><h2>Not sure of your size?</h2><p>Three questions, a recommended kit, your size preselected.</p><div><a class="btn" href="fit-finder.html">Start the Fit Finder</a></div></div>
+      <div class="p2"><span class="eyebrow" style="color:#c9c6be">Nano Motion Club</span><h2>Access, not discounts.</h2><p>First access to drops, restock priority, free hemming and member training sessions. Try it free for 30 days.</p><div><a class="btn btn-accent" href="membership.html">Explore the Club</a></div></div>
+    </div>
+  </section>
+</main>
+
+<script src="assets/products.js"></script>
+<script src="assets/store.js"></script>
+<script src="assets/eventlog.js"></script>
+<script src="assets/tracking.js"></script>
+<script src="assets/consent.js"></script>
+<script src="assets/layout.js"></script>
+<script>
+  window.NMPage = function () {
+    var ids = ['NM-RJ-01', 'NM-LG-03', 'NM-RS-05', 'NM-SH-07'];
+    document.getElementById('home-grid').innerHTML = ids.map(function (id) { return NM.tile(NM.product(id)); }).join('');
+  };
+</script>
+</body>
+</html>

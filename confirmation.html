@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Order confirmed | Nano Motion</title>
+<link rel="preconnect" href="https://bzrcdn.openai.com">
+<!-- OpenAI Measurement Pixel: same block, top of <head>, on every page.
+     Order matters: 1) decide consent  2) load SDK  3) set consent BEFORE init  4) init. -->
+<script>
+  (function () {
+    var m = { country: 'US' }, c = null;
+    try { m = JSON.parse(localStorage.getItem('nm_market') || '{"country":"US"}'); c = localStorage.getItem('nm_consent'); } catch (e) {}
+    var optIn = ['GB', 'DE'].indexOf(m.country) !== -1;   // opt-in markets
+    window.__nmDenied = c === 'denied' || (optIn && c !== 'granted');
+  })();
+  (function (w, d, s, u) {
+    if (w.oaiq) return;
+    var q = function () { q.q.push(arguments); };
+    q.q = []; w.oaiq = q;
+    var js = d.createElement(s); js.async = true; js.src = u;
+    var f = d.getElementsByTagName(s)[0]; f.parentNode.insertBefore(js, f);
+  })(window, document, "script", "https://bzrcdn.openai.com/sdk/oaiq.min.js");
+  if (window.__nmDenied) oaiq("consent", false);
+  var __nmUser = {};
+  try { __nmUser = JSON.parse(localStorage.getItem('nm_user') || '{}'); } catch (e) {}
+  oaiq("init", {
+    pixelId: "1GtqyL7Rgr4qk4pR3LFbss",
+    debug: true,          // on for this demo so reviewers can see SDK activity; off in production
+    user: __nmUser        // hashed identifiers only (SHA-256), plus raw country/city/postal code
+  });
+</script>
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body data-page="confirmation">
+<main class="confirm" id="conf"></main>
+
+<script src="assets/products.js"></script>
+<script src="assets/store.js"></script>
+<script src="assets/eventlog.js"></script>
+<script src="assets/tracking.js"></script>
+<script src="assets/consent.js"></script>
+<script src="assets/layout.js"></script>
+<script>
+  window.NMPage = function () {
+    var root = document.getElementById('conf');
+    var order = NM.order(NM.param('order'));
+    if (!order) {
+      root.innerHTML = '<h1 style="font-size:2rem">We could not find that order.</h1><a class="btn" href="shop.html">Keep shopping</a>';
+      return;
+    }
+    var mk = Object.keys(window.NM_MARKETS).map(function (k) { return window.NM_MARKETS[k]; })
+      .filter(function (x) { return x.currency === order.currency; })[0];
+
+    // Purchase conversion. event_id = order ID; a refresh is skipped, and a
+    // future server-side send with the same ID is deduplicated by OpenAI.
+    NMT.orderCreated(order);
+
+    root.innerHTML =
+      '<span class="eyebrow">Order ' + NM.esc(order.id) + '</span>' +
+      '<h1 style="font-size:2.6rem">Thank you. Your order is in.</h1>' +
+      '<p class="muted">A confirmation would be on its way to your inbox. (Demo store: nothing ships.)</p>' +
+      '<div class="ordercard">' + order.contents.map(function (c) {
+        return '<div class="sumrow" style="display:flex;justify-content:space-between;margin:6px 0"><span>' + NM.esc(c.name) + ' × ' + c.quantity + '</span><span>' + NM.format(c.amount * c.quantity, mk) + '</span></div>';
+      }).join('') +
+      '<div style="display:flex;justify-content:space-between;font-weight:700;border-top:1px solid var(--line);padding-top:10px;margin-top:10px"><span>Total</span><span>' + NM.format(order.total, mk) + '</span></div></div>' +
+      '<div class="cta-row" style="justify-content:center"><a class="btn" href="membership.html">Members get free hemming: join the Club</a><a class="btn btn-ghost" href="shop.html">Keep shopping</a></div>';
+  };
+</script>
+</body>
+</html>

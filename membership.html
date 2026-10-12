@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nano Motion Club | Nano Motion</title>
+<link rel="preconnect" href="https://bzrcdn.openai.com">
+<!-- OpenAI Measurement Pixel: same block, top of <head>, on every page.
+     Order matters: 1) decide consent  2) load SDK  3) set consent BEFORE init  4) init. -->
+<script>
+  (function () {
+    var m = { country: 'US' }, c = null;
+    try { m = JSON.parse(localStorage.getItem('nm_market') || '{"country":"US"}'); c = localStorage.getItem('nm_consent'); } catch (e) {}
+    var optIn = ['GB', 'DE'].indexOf(m.country) !== -1;   // opt-in markets
+    window.__nmDenied = c === 'denied' || (optIn && c !== 'granted');
+  })();
+  (function (w, d, s, u) {
+    if (w.oaiq) return;
+    var q = function () { q.q.push(arguments); };
+    q.q = []; w.oaiq = q;
+    var js = d.createElement(s); js.async = true; js.src = u;
+    var f = d.getElementsByTagName(s)[0]; f.parentNode.insertBefore(js, f);
+  })(window, document, "script", "https://bzrcdn.openai.com/sdk/oaiq.min.js");
+  if (window.__nmDenied) oaiq("consent", false);
+  var __nmUser = {};
+  try { __nmUser = JSON.parse(localStorage.getItem('nm_user') || '{}'); } catch (e) {}
+  oaiq("init", {
+    pixelId: "1GtqyL7Rgr4qk4pR3LFbss",
+    debug: true,          // on for this demo so reviewers can see SDK activity; off in production
+    user: __nmUser        // hashed identifiers only (SHA-256), plus raw country/city/postal code
+  });
+</script>
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body data-page="membership">
+<main>
+  <section class="section wrap">
+    <span class="eyebrow">Nano Motion Club</span>
+    <h1>Access, not discounts.</h1>
+    <p class="muted" style="max-width:620px;font-size:1.1rem">Membership is built around what serious trainers actually want: first access to drops, restock priority on your size, free hemming, and member-only training sessions.</p>
+    <div class="perks" style="margin-top:32px">
+      <div class="perk"><strong>First access</strong><br>Shop new drops 48 hours early, including member-only colorways.</div>
+      <div class="perk"><strong>Restock priority</strong><br>When your size comes back, members hear first.</div>
+      <div class="perk"><strong>Free hemming</strong><br>Every pant and legging, tailored to your inseam.</div>
+      <div class="perk"><strong>Training content</strong><br>Weekly sessions with the athletes who test our gear.</div>
+    </div>
+    <div class="plans" id="plans"></div>
+  </section>
+</main>
+
+<script src="assets/products.js"></script>
+<script src="assets/store.js"></script>
+<script src="assets/eventlog.js"></script>
+<script src="assets/tracking.js"></script>
+<script src="assets/consent.js"></script>
+<script src="assets/layout.js"></script>
+<script>
+  window.NMPage = function () {
+    var root = document.getElementById('plans');
+    var m = NM.market();
+    var monthly = window.NM_PLANS.club_monthly;
+    var member = NM.read('nm_member', null);
+
+    function planCard(kind) {
+      var isTrial = kind === 'trial';
+      return '<div class="plan' + (isTrial ? ' feature' : '') + '">' +
+        '<span class="eyebrow">' + (isTrial ? 'Start here' : 'Full membership') + '</span>' +
+        '<h2>' + (isTrial ? 'Free for 30 days' : NM.format(monthly.price[m.currency]) + ' / month') + '</h2>' +
+        '<ul>' + (isTrial
+          ? '<li>Every Club perk for 30 days</li><li>No card required to start</li><li>Cancel any time</li>'
+          : '<li>Every Club perk</li><li>Member-only drops and colorways</li><li>Billed monthly in ' + m.currency + '</li>') + '</ul>' +
+        '<form data-kind="' + kind + '"><label class="field">Email<input type="email" required autocomplete="email"></label>' +
+        '<button class="btn btn-block' + (isTrial ? '' : ' btn-ghost') + '">' + (isTrial ? 'Start free trial' : 'Join monthly') + '</button></form></div>';
+    }
+
+    function render() {
+      if (member) {
+        root.innerHTML = '<div class="plan feature" style="grid-column:1/-1"><span class="eyebrow">You are in</span>' +
+          '<h2>Welcome to the Club.</h2><p>' + (member.kind === 'trial' ? 'Your 30-day free trial is active.' : 'Your monthly membership is active.') +
+          ' Reference ' + NM.esc(member.id) + '.</p><div><button class="btn btn-ghost" id="reset">Reset demo membership</button></div></div>';
+        document.getElementById('reset').onclick = function () { NM.write('nm_member', null); member = null; render(); };
+        return;
+      }
+      root.innerHTML = planCard('trial') + planCard('monthly');
+      root.querySelectorAll('form').forEach(function (form) {
+        form.onsubmit = async function (e) {
+          e.preventDefault();
+          var kind = form.getAttribute('data-kind');
+          await NMT.identify({ email: form.querySelector('input').value, country: m.country });
+          if (kind === 'trial') {
+            member = { kind: 'trial', id: NM.newId('trial_'), plan: 'club_trial_30d' };
+            NMT.trialStarted(member.plan, member.id);
+          } else {
+            member = { kind: 'monthly', id: NM.newId('sub_'), plan: 'club_monthly' };
+            NMT.subscriptionCreated(member.plan, monthly.price[m.currency], m.currency, member.id);
+          }
+          NM.write('nm_member', member);
+          render();
+        };
+      });
+    }
+    render();
+  };
+</script>
+</body>
+</html>
