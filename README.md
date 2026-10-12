@@ -2,7 +2,7 @@
 
 A demo store for Nano Motion, a fictional premium activewear brand launching on ChatGPT Ads. The site exists to show one thing well: **the OpenAI Measurement Pixel deployed deliberately**, with a ranked signal plan, correct payloads, idempotent conversions, consent by market, and a clear line where the pixel stops and the Conversions API takes over.
 
-- **Live site:** https://nik0320kasat-netizen.github.io/nano-motion/
+- **Live site:** https://nano-motion-three.vercel.app/
 - **Demo mode:** add `?demo=1` to any URL to open the pixel event log beside the store (off with `?demo=0`)
 - **Pixel ID:** `1GtqyL7Rgr4qk4pR3LFbss`
 - **Stack:** plain HTML, CSS, JavaScript. No framework, no build step, no backend, so every line is readable.
