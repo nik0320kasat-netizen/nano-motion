@@ -229,3 +229,25 @@ body.has-nmlog.nmlog-min .nmlog { top: auto; bottom: 0; left: auto; right: 16px;
 body.has-nmlog.nmlog-min .nmlog-bar { border-bottom: 0; }
 body.has-nmlog.nmlog-min .consent { bottom: 64px; right: 16px; }
 
+
+/* Privacy settings: consistent footer entry, accessible modal and switch */
+.nm-privacy-dialog { border: 1px solid var(--line); border-radius: 16px; padding: 26px; width: min(480px, calc(100vw - 32px)); max-width: none; box-shadow: 0 22px 70px rgba(0,0,0,.23); color: var(--ink); background: #fff; }
+.nm-privacy-dialog::backdrop { background: rgba(20,22,20,.52); }
+.nm-privacy-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+.nm-privacy-heading h2 { font-size: 1.48rem; line-height: 1.2; margin: 0; }
+.nm-privacy-close { border: 0; background: #efede7; border-radius: 50%; cursor: pointer; height: 34px; width: 34px; flex-shrink: 0; font-size: 1.45rem; line-height: 1; }
+.nm-privacy-dialog p { font-size: .9rem; line-height: 1.6; color: var(--ink-2); margin: 14px 0; }
+.nm-privacy-setting { display: flex; align-items: center; gap: 14px; justify-content: space-between; border: 1px solid var(--line); background: #faf9f6; border-radius: 12px; padding: 18px; margin-top: 18px; }
+.nm-privacy-setting-text { display: flex; flex-direction: column; gap: 6px; }
+.nm-privacy-setting-text strong { font-size: .96rem; }
+.nm-privacy-setting-text span { font-size: .82rem; color: var(--ink-2); line-height: 1.45; }
+.nm-measure-switch { flex: 0 0 49px; width: 49px; height: 29px; border: 0; border-radius: 99px; padding: 3px; background: #a6aba7; cursor: pointer; transition: background .15s; text-align: left; }
+.nm-measure-switch span { display: block; height: 23px; width: 23px; border-radius: 50%; background: white; transition: transform .15s; box-shadow: 0 1px 2px rgba(0,0,0,.15); }
+.nm-measure-switch[aria-checked="true"] { background: #2f5d50; }
+.nm-measure-switch[aria-checked="true"] span { transform: translateX(20px); }
+.nm-measure-switch:disabled { cursor: not-allowed; opacity: .7; }
+.nm-measure-switch:focus-visible, .nm-privacy-close:focus-visible, #nm-privacy-choices:focus-visible { outline: 3px solid #1c7266; outline-offset: 3px; }
+.nm-privacy-dialog .nm-privacy-status { color: var(--ink); font-weight: 600; font-size: .86rem; }
+.nm-privacy-dialog .nm-privacy-fine { font-size: .78rem; color: var(--muted); }
+.nm-privacy-actions { display: flex; justify-content: flex-end; margin-top: 20px; }
+@media (max-width: 520px) { .nm-privacy-dialog { padding: 20px; } .nm-privacy-setting { padding: 14px; } }
