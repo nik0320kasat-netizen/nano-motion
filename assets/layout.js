@@ -49,13 +49,7 @@
     var m = NM.market();
     var f = document.createElement('footer');
     f.className = 'site-footer';
-    var choice = m.optIn
-      ? '<a href="#" id="nm-consent-open">Cookie and measurement choices</a>'
-      : NM.gpc() && NM.consentState() !== 'granted'
-        ? '<a href="privacy.html">Opted out: Global Privacy Control honored</a>'
-      : (NM.consentState() === 'denied'
-          ? '<a href="#" id="nm-optin">Allow ad measurement</a>'
-          : '<a href="#" id="nm-optout">Your privacy choices</a>');
+    var choice = '<a href="#" id="nm-privacy-choices">Your Privacy Choices</a>';
     f.innerHTML =
       '<div class="wrap foot-grid">' +
         '<div><div class="logo small"><span class="logo-mark"></span>NANO MOTION</div>' +
@@ -67,12 +61,8 @@
       'Add <code>?demo=1</code> to any URL to see the pixel event log.</div>';
     document.body.appendChild(f);
 
-    var o = document.getElementById('nm-optout');
-    if (o) o.onclick = function (e) { e.preventDefault(); window.NMConsent.optOut(); };
-    var i = document.getElementById('nm-optin');
-    if (i) i.onclick = function (e) { e.preventDefault(); window.NMConsent.optIn(); };
-    var c = document.getElementById('nm-consent-open');
-    if (c) c.onclick = function (e) { e.preventDefault(); window.NMConsent.show(); };
+    var c = document.getElementById('nm-privacy-choices');
+    if (c) c.addEventListener('click', function (e) { e.preventDefault(); window.NMConsent.showSettings(); });
   }
 
   NM.renderCartCount = function () {
