@@ -124,8 +124,8 @@ Phone hashes only match when the country code is present, and shoppers usually t
 
 | Control | What the site does | Why |
 | --- | --- | --- |
-| Content Security Policy | Enforced via `vercel.json`: scripts only from this site, `bzrcdn.openai.com` and one hashed inline script (the pixel snippet); connections only to this site and OpenAI's pixel domains; no plugins, no framing, forms post only to this site | Exactly the sources OpenAI's docs list; nothing else can run or send data |
-| No `unsafe-inline` for scripts | Page logic lives in `assets/pages/*.js`; the only inline script is the pixel snippet, allowed by its SHA-256 hash | OpenAI's docs advise against adding `unsafe-inline` for the pixel. A nonce needs a server per response; a hash suits a static site |
+| Content Security Policy | Enforced via `vercel.json`: scripts only from this site and `bzrcdn.openai.com`; the Pixel bootstrap is an external same-origin script; connections only to this site and OpenAI's pixel domains; no plugins, no framing, forms post only to this site | Exactly the sources OpenAI's docs list; nothing else can run or send data |
+| No `unsafe-inline` for scripts | Page logic lives in `assets/pages/*.js`; the Pixel bootstrap now lives in external `assets/pixel-init.js`, which is allowed by `script-src 'self'` | OpenAI's docs advise against adding `unsafe-inline` for the pixel. No inline-script hash or server nonce is required for the bootstrap |
 | Other headers | `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` (camera, microphone, geolocation, payment off), `Strict-Transport-Security`, `frame-ancestors 'none'` | Standard hardening a CTO's security team will check first |
 | Cookies | Both pixel cookies are first-party (`__oppref`, `__obref`), set on this site's domain | Third-party cookie blocking does not affect the pixel |
 | Keys | No API key in the browser. The pixel needs only its public Pixel ID | The Conversions API key lives only on the server |
@@ -133,7 +133,7 @@ Phone hashes only match when the country code is present, and shoppers usually t
 
 **Why no Subresource Integrity (SRI) on `oaiq.min.js`:** the SDK is evergreen (OpenAI updates it in place), so a pinned hash would break the pixel on the next release. The control is the CSP allowlist plus vendor review; the trade-off is worth stating plainly.
 
-**When the CSP changes:** if the pixel snippet's text changes, its hash in `vercel.json` must be recomputed, or the browser blocks it.
+**Pixel bootstrap and CSP:** all pages reference `assets/pixel-init.js` from the document head. Keeping the bootstrap in one external file avoids page-specific inline CSP hash mismatches during consent changes. The CSP still restricts scripts to this site and the OpenAI SDK domain.
 
 ## 8. What the pixel cannot do, and the alternative
 
@@ -200,6 +200,7 @@ account.html        Account signup (separate from the Club on purpose)
 privacy.html        Privacy notice: what is sent, cookies, choices
 assets/products.js  Catalog and markets; prices in minor units per market
 assets/store.js     Cart, market, consent state, orders (localStorage)
+assets/pixel-init.js  Shared head bootstrap for SDK, consent gating and initialization
 assets/tracking.js  The only file that calls oaiq
 assets/consent.js   Opt-in banner, permanent privacy settings panel, toggle and SDK consent calls
 assets/eventlog.js  Demo event log (?demo=1)
@@ -210,7 +211,7 @@ vercel.json         Security headers and Content Security Policy
 
 **`tracking.js` owns browser pixel calls:** consent gating, minor-unit amounts, `contents[]` with variant IDs, event IDs and the fire-once guard, normalization and hashing, and demo logging. Its `sent` log status means **dispatched to the SDK**, not confirmed processed or attributed. Keep server-side conversion delivery, authenticated ingestion diagnostics, and attribution reporting outside this browser file. No server-side validation or attribution polling is required for this reference implementation.
 
-**Head snippet, identical on every page, top of `<head>`:** decide consent → load the SDK → `oaiq('consent', false)` if needed → `oaiq('init', ...)` with stored hashes. Preconnect to `bzrcdn.openai.com`. If Nano Motion's real site has a Content Security Policy, add `https://bzrcdn.openai.com` to `script-src` and `connect-src`, and `https://bzr.openai.com` to `connect-src` and `img-src`.
+**Shared head bootstrap, linked on every page (`assets/pixel-init.js`):** decide consent → load the SDK → `oaiq('consent', false)` if needed → `oaiq('init', ...)` with stored hashes. Preconnect to `bzrcdn.openai.com`. If Nano Motion's real site has a Content Security Policy, add `https://bzrcdn.openai.com` to `script-src` and `connect-src`, and `https://bzr.openai.com` to `connect-src` and `img-src`.
 
 ## 11. Verification
 
