@@ -113,8 +113,9 @@ Phone hashes only match when the country code is present, and shoppers usually t
 | Japan | JPY | 0 | ¥14,800 | `14800` | On by default |
 
 - In opt-in markets the head snippet calls `oaiq('consent', false)` **before** `init`. Nothing is sent until the visitor accepts. Events from before consent are not replayed, by design. Declining also removes the pixel's cookies.
-- In production, Nano Motion's consent platform (OneTrust, Osano or similar) makes these same calls; the banner here stands in for it. Legal rules per country are set with their privacy counsel.
-- **Global Privacy Control is honored in every market.** If the browser sends GPC (`navigator.globalPrivacyControl`), the head snippet treats it like an opt-in market: `consent false` before `init`, nothing sent unless the visitor explicitly opts in on this site. CCPA and several other US states require honoring GPC.
+- The footer always displays **Your Privacy Choices**, opening an accessible On/Off switch that reflects the effective measurement state. US/Japan start On unless opted out or GPC is active; UK/Germany start Off and show an opt-in banner on first visit. Switching the control updates the saved preference and SDK consent immediately. An active GPC signal locks the switch Off. The market dropdown is a demonstration control, not real geolocation.
+- In production, Nano Motion's consent platform (OneTrust, Osano or similar) would own privacy choices and make these consent calls. Geographic defaults and applicable legal rules require Nano Motion privacy/legal approval.
+- **Global Privacy Control is honored in every market.** If the browser sends GPC (`navigator.globalPrivacyControl`), the head snippet calls `consent false` before `init` and measurement remains disabled while GPC is active, even when a prior site preference was granted. CCPA and several other US states require honoring GPC.
 - One Pixel ID covers all markets. Multiple Pixel IDs are meant for multiple advertisers or partners on one site, not one per country.
 - `market_selected` records demand from markets before Nano Motion launches there.
 - A privacy notice page lists the pixel, its first-party cookies (`__oppref`, `__obref`) and exactly what is sent.
@@ -200,7 +201,7 @@ privacy.html        Privacy notice: what is sent, cookies, choices
 assets/products.js  Catalog and markets; prices in minor units per market
 assets/store.js     Cart, market, consent state, orders (localStorage)
 assets/tracking.js  The only file that calls oaiq
-assets/consent.js   Banner and consent calls
+assets/consent.js   Opt-in banner, permanent privacy settings panel, toggle and SDK consent calls
 assets/eventlog.js  Demo event log (?demo=1)
 assets/layout.js    Header, footer, market selector, page_viewed
 assets/pages/*.js   Page logic, one file per page (keeps inline scripts out for the CSP)
@@ -223,7 +224,7 @@ The site was tested end to end in headless Chromium with every `oaiq` call recor
 - No raw email, phone or name in any call or in storage
 - Germany: `consent false` set before `init`, banner shown, nothing sent until accept, then `items_added` 8900 EUR
 - UK decline: nothing sent after navigation
-- Global Privacy Control (US): `consent false` before `init`, nothing sent, opt-out shown in the footer and the demo log
+- Global Privacy Control (US): `consent false` before `init`, nothing sent, GPC lock shown in the unified privacy settings panel and an entry in the demo log
 - Japan: ¥14,800 sent as `14800`
 - Phone numbers typed in national format get the right country code (US, UK, Germany, Japan)
 - 2,000 generated order IDs, all unique
