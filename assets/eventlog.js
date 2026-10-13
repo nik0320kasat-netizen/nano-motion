@@ -74,7 +74,7 @@
       document.body.classList.toggle('nmlog-min', on);
       minBtn.textContent = on ? '+' : '–';
       minBtn.title = on ? 'Expand' : 'Minimize';
-      try { on ? sessionStorage.setItem('nm_demo_min', '1') : sessionStorage.removeItem('nm_demo_min'); } catch (e) {}
+      try { sessionStorage.setItem('nm_demo_min', on ? '1' : '0'); } catch (e) {}
     }
     var startMin = false;
     try {
