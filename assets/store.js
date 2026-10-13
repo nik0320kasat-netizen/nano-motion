@@ -23,7 +23,7 @@
   };
   NM.setMarket = function (country) { write('nm_market', { country: country }); };
 
-  // ---- Consent (only meaningful in opt-in markets) ------------------------
+  // ---- Advertising measurement consent and GPC ------------------------
   NM.consentState = function () {
     try { return localStorage.getItem('nm_consent') || 'unset'; } catch (e) { return 'unset'; }
   };
@@ -35,7 +35,8 @@
   // sends unless the visitor explicitly grants consent on this site.
   NM.gpc = function () { return navigator.globalPrivacyControl === true; };
   NM.consentGranted = function () {
-    if (!NM.market().optIn && !NM.gpc()) return NM.consentState() !== 'denied';
+    if (NM.gpc()) return false; // browser opt-out cannot be overridden by site consent
+    if (!NM.market().optIn) return NM.consentState() !== 'denied';
     return NM.consentState() === 'granted';
   };
 
