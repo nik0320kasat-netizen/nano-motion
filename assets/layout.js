@@ -22,8 +22,9 @@
       '<div class="announce">Free standard shipping on orders over ' + NM.format(m.freeShip) +
         ' · Free returns · Members get first access to drops</div>' +
       '<div class="bar wrap">' +
+        '<button type="button" class="mobile-menu-button" id="nm-menu-button" aria-controls="nm-main-nav" aria-expanded="false" aria-label="Open menu"><span aria-hidden="true">☰</span></button>' +
         '<a class="logo" href="index.html" aria-label="Nano Motion home"><span class="logo-mark"></span>NANO MOTION</a>' +
-        '<nav class="nav">' +
+        '<nav class="nav" id="nm-main-nav" aria-label="Main navigation">' +
           nav('shop.html', 'Shop', 'shop') +
           nav('fit-finder.html', 'Fit Finder', 'fit-finder') +
           nav('membership.html', 'Club', 'membership') +
@@ -35,6 +36,27 @@
         '</div>' +
       '</div>';
     document.body.insertBefore(h, document.body.firstChild);
+
+    var menuButton = document.getElementById('nm-menu-button');
+    var mainNav = document.getElementById('nm-main-nav');
+    function closeMenu() {
+      mainNav.classList.remove('is-open');
+      menuButton.setAttribute('aria-expanded', 'false');
+      menuButton.setAttribute('aria-label', 'Open menu');
+      menuButton.querySelector('span').textContent = '☰';
+    }
+    menuButton.addEventListener('click', function () {
+      var open = mainNav.classList.toggle('is-open');
+      menuButton.setAttribute('aria-expanded', open ? 'true' : 'false');
+      menuButton.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+      menuButton.querySelector('span').textContent = open ? '×' : '☰';
+    });
+    mainNav.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { closeMenu(); menuButton.focus(); }
+    });
+    menuButton.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeMenu();
+    });
 
     document.getElementById('nm-market').addEventListener('change', function (e) {
       var next = window.NM_MARKETS[e.target.value];
