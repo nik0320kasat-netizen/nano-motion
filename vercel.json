@@ -5,7 +5,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'sha256-8CkAfhup+EsZNsffn2aZ78HRxzPrG3HRLRhPunAmp/A=' https://bzrcdn.openai.com; connect-src 'self' https://bzr.openai.com https://bzrcdn.openai.com; img-src 'self' data: https://bzr.openai.com; style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+          "value": "default-src 'self'; script-src 'self' https://bzrcdn.openai.com; connect-src 'self' https://bzr.openai.com https://bzrcdn.openai.com; img-src 'self' data: https://bzr.openai.com; style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
         },
         {
           "key": "X-Content-Type-Options",
