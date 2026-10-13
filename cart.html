@@ -13,7 +13,7 @@
     try { m = JSON.parse(localStorage.getItem('nm_market') || '{"country":"US"}'); c = localStorage.getItem('nm_consent'); } catch (e) {}
     var optIn = ['GB', 'DE'].indexOf(m.country) !== -1;   // opt-in markets
     var gpc = navigator.globalPrivacyControl === true;             // browser opt-out signal (CCPA and other US states)
-    window.__nmDenied = c === 'denied' || ((optIn || gpc) && c !== 'granted');
+    window.__nmDenied = gpc || c === 'denied' || (optIn && c !== 'granted');
   })();
   (function (w, d, s, u) {
     if (w.oaiq) return;
