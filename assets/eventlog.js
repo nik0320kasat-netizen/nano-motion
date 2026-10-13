@@ -77,7 +77,13 @@
       try { on ? sessionStorage.setItem('nm_demo_min', '1') : sessionStorage.removeItem('nm_demo_min'); } catch (e) {}
     }
     var startMin = false;
-    try { startMin = sessionStorage.getItem('nm_demo_min') === '1'; } catch (e) {}
+    try {
+      var saved = sessionStorage.getItem('nm_demo_min');
+      // On a phone, default to minimized unless the visitor previously chose otherwise.
+      startMin = saved === '1' || (saved === null && window.matchMedia && window.matchMedia('(max-width: 900px)').matches);
+    } catch (e) {
+      startMin = !!(window.matchMedia && window.matchMedia('(max-width: 900px)').matches);
+    }
     setMin(startMin);
     panel.querySelector('[data-act=clear]').onclick = function () { save([]); render(); };
     minBtn.onclick = function () { setMin(!panel.classList.contains('min')); };
